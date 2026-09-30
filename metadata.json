@@ -1,0 +1,6 @@
+{
+  "name": "SUNAConta PRO - Sistema Tributario & Contable SUNAT",
+  "description": "Sistema de gestión tributaria y contable integral con conexión a SUNAT (Clave SOL, SIRE RCE/RVIE), descarga y parseo de XML/CPE, motor contable PCGE automático, reportes financieros y almacenamiento en base de datos SQL histórica.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
