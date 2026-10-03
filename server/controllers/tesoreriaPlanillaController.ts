@@ -404,7 +404,7 @@ export const tesoreriaPlanillaController = {
     try {
       const empresaId = req.params.id;
       const planillaId = req.params.planillaId;
-      const info = planillaService.exportarPlame(empresaId, planillaId);
+      const info = await planillaService.exportarPlame(empresaId, planillaId);
       return successResponse(res, info);
     } catch (err: any) {
       return errorResponse(res, err.message);

@@ -21,6 +21,7 @@ import {
   FolderLock
 } from 'lucide-react';
 import { EmpresaCliente } from '../../types';
+import { useToast } from '../../context/ToastContext';
 
 interface EmpresasClientesViewProps {
   empresas: EmpresaCliente[];
@@ -39,6 +40,7 @@ export const EmpresasClientesView: React.FC<EmpresasClientesViewProps> = ({
   onTogglePreliquidacionNotificada,
   onIngresarEmpresa
 }) => {
+  const { success } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [filtroEstado, setFiltroEstado] = useState<'TODOS' | 'POR_VENCER' | 'PRELIQUIDADO' | 'AL_DIA'>('TODOS');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -368,7 +370,7 @@ export const EmpresasClientesView: React.FC<EmpresasClientesViewProps> = ({
                   onClick={() => {
                     navigator.clipboard.writeText(generarMensajePreliquidacion(selectedParaRecordatorio));
                     onTogglePreliquidacionNotificada(selectedParaRecordatorio.id);
-                    alert('Mensaje copiado al portapapeles listo para pegar en WhatsApp.');
+                    success('Mensaje copiado al portapapeles listo para enviar por WhatsApp.', 'Notificación Copiada');
                     setSelectedParaRecordatorio(null);
                   }}
                   className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"

@@ -10,12 +10,14 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { apiClient } from '../../api/client';
+import { useToast } from '../../context/ToastContext';
 
 interface ReglasContabilizacionViewProps {
   empresaId: string;
 }
 
 export const ReglasContabilizacionView: React.FC<ReglasContabilizacionViewProps> = ({ empresaId }) => {
+  const { error } = useToast();
   const [operacionSeleccionada, setOperacionSeleccionada] = useState<string>('COMPRA_SERVICIO');
   const [pctAdmin, setPctAdmin] = useState<number>(60);
   const [pctVentas, setPctVentas] = useState<number>(40);
@@ -33,7 +35,7 @@ export const ReglasContabilizacionView: React.FC<ReglasContabilizacionViewProps>
       });
       setSimulacion(res.data);
     } catch (err: any) {
-      alert(`Error en simulación: ${err.message}`);
+      error(`Error en simulación: ${err.message}`, 'Simulación Fallida');
     }
   };
 

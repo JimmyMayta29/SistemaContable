@@ -1,236 +1,380 @@
 import React, { useState } from 'react';
 import { 
-  RefreshCw, 
-  UploadCloud, 
-  ShieldCheck, 
   KeyRound, 
-  CheckCircle2, 
-  FileCode, 
-  Database, 
   Lock, 
+  CheckCircle2, 
+  AlertTriangle, 
+  UploadCloud, 
+  FileCode, 
+  FileText, 
   Download, 
-  Terminal, 
-  Clock,
-  Sparkles,
-  FileText
+  RefreshCw, 
+  AlertCircle,
+  ShieldCheck,
+  Building,
+  Info
 } from 'lucide-react';
-import { Comprobante, EmpresaCliente } from '../../types';
-import { parseXmlUblInvoice } from '../../services/sunatScraperAndSync';
+import { EmpresaCliente } from '../../types';
+import { 
+  useSunatConexionEstado, 
+  useGuardarConexionSunat, 
+  useValidarConexionSunat,
+  useComprobantesXmlList,
+  useImportarComprobantesXml,
+  usePleLibrosCatalogo,
+  useExportarPle
+} from '../../hooks/useSunatSirePle';
+import { useToast } from '../../context/ToastContext';
 
 interface SunatSyncViewProps {
   empresa: EmpresaCliente;
-  onUpdateEmpresa: (updated: Partial<EmpresaCliente>) => void;
-  compras: Comprobante[];
-  ventas: Comprobante[];
-  onAddComprobantes: (nuevos: Comprobante[], tipo: 'COMPRAS' | 'VENTAS') => void;
+  onUpdateEmpresa?: (updated: Partial<EmpresaCliente>) => void;
+  compras?: any[];
+  ventas?: any[];
+  onAddComprobantes?: (nuevos: any[], tipo: 'COMPRAS' | 'VENTAS') => void;
 }
 
-export const SunatSyncView: React.FC<SunatSyncViewProps> = ({
-  empresa,
-  onUpdateEmpresa,
-  compras,
-  ventas,
-  onAddComprobantes
-}) => {
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [syncLogs, setSyncLogs] = useState<string[]>([]);
-  const [syncProgress, setSyncProgress] = useState(0);
-  const [currentSyncStep, setCurrentSyncStep] = useState<string>('');
+export const SunatSyncView: React.FC<SunatSyncViewProps> = ({ empresa }) => {
+  const { success, error, warning, info } = useToast();
+  const [activeTab, setActiveTab] = useState<'conexion' | 'xml' | 'ple'>('conexion');
+
+  // Form states for credentials (write-only for passwords, never prefilled from server)
+  const [usuarioSol, setUsuarioSol] = useState('');
+  const [claveSol, setClaveSol] = useState('');
+  const [clientId, setClientId] = useState('');
+  const [clientSecret, setClientSecret] = useState('');
+  const [modoSimulado, setModoSimulado] = useState(true);
+
+  // XML uploader state
   const [uploadFeedback, setUploadFeedback] = useState<string | null>(null);
 
-  // Form states for credentials
-  const [usuarioSol, setUsuarioSol] = useState(empresa.usuarioSol || 'MODDATOS');
-  const [claveSol, setClaveSol] = useState(empresa.claveSol || 'moddatos123');
-  const [clientIdSire, setClientIdSire] = useState(empresa.clientIdSire || '68c85fa6-7c98-4c31-92da-1901df934a38');
-  const [clientSecretSire, setClientSecretSire] = useState(empresa.clientSecretSire || '689f9e12-b13c-41ad-a0bc-9801fa4e32d1');
-  const [ambiente, setAmbiente] = useState<'PRODUCCION' | 'BETA_TEST'>(empresa.ambienteSunat || 'PRODUCCION');
+  // PLE state
+  const [periodoPle, setPeriodoPle] = useState('2026-09');
+  const [pleModal, setPleModal] = useState<{ open: boolean; exportacion: any | null }>({ open: false, exportacion: null });
 
-  const handleSaveCredentials = () => {
-    onUpdateEmpresa({
-      usuarioSol,
-      claveSol,
-      clientIdSire,
-      clientSecretSire,
-      ambienteSunat: ambiente
-    });
-    alert('Credenciales de Clave SOL y API SIRE guardadas exitosamente.');
-  };
+  // Queries & Mutations
+  const { data: estadoConexion, isLoading: loadingEstado, refetch: refetchEstado } = useSunatConexionEstado(empresa.id);
+  const guardarMutation = useGuardarConexionSunat(empresa.id);
+  const validarMutation = useValidarConexionSunat(empresa.id);
+  const { data: xmlList = [], refetch: refetchXml } = useComprobantesXmlList(empresa.id);
+  const importarXmlMutation = useImportarComprobantesXml(empresa.id);
+  const { data: pleLibros = [] } = usePleLibrosCatalogo(empresa.id);
+  const exportarPleMutation = useExportarPle(empresa.id);
 
-  const handleRunSunatSync = async () => {
-    setIsSyncing(true);
-    setSyncLogs([]);
-    setSyncProgress(10);
-    setCurrentSyncStep('Iniciando autenticación segura con portal de SUNAT...');
-
-    const logMessages = [
-      `[AUTH] Conectando a https://api-seguridad.sunat.gob.pe con credenciales de ${empresa.ruc}...`,
-      `[TOKEN] Token de acceso OAuth2 generado exitosamente con Clave SOL...`,
-      `[SIRE-RCE] Consultando propuesta oficial de Registro de Compras Electrónico...`,
-      `[DESCARGA] 6 Comprobantes de compras identificados con código CAR.`,
-      `[XML-CDR] Descargando archivos XML UBL 2.1 y constancias CDR de validación...`,
-      `[ESTADO] Comprobantes validados con estado: ACEPTADO por SUNAT (Código 0).`,
-      `[SIRE-RVIE] Consultando comprobantes emitidos en Registro de Ventas e Ingresos...`,
-      `[VENTAS] 3 Comprobantes de venta descargados y conciliados.`,
-      `[CONTABILIZACION] Procesando asientos contables automáticos en Libro Diario PCGE...`,
-      `[FINALIZADO] Sincronización exitosa. Registros actualizados en base de datos.`
-    ];
-
-    for (let i = 0; i < logMessages.length; i++) {
-      await new Promise(r => setTimeout(r, 400));
-      setSyncLogs(prev => [...prev, logMessages[i]]);
-      setSyncProgress(Math.round(((i + 1) / logMessages.length) * 100));
-      setCurrentSyncStep(logMessages[i]);
+  const handleGuardarCredenciales = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!usuarioSol || !claveSol) {
+      warning('Debe ingresar Usuario SOL y Clave SOL para configurar el acceso.', 'Credenciales Incompletas');
+      return;
     }
-
-    setIsSyncing(false);
+    try {
+      await guardarMutation.mutateAsync({
+        ruc: empresa.ruc,
+        usuarioSol,
+        claveSol,
+        clientId: clientId || undefined,
+        clientSecret: clientSecret || undefined,
+        modoSimulado
+      });
+      // Limpiar campos sensibles de la memoria
+      setClaveSol('');
+      setClientSecret('');
+      await refetchEstado();
+      success('Credenciales cifradas con AES-256-GCM y guardadas exitosamente.', 'Seguridad SUNAT');
+    } catch (err: any) {
+      error('Error guardando credenciales: ' + (err.message || 'Error'), 'Fallo de Cifrado');
+    }
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
+  const handleValidarConexion = async () => {
+    try {
+      const res: any = await validarMutation.mutateAsync();
+      await refetchEstado();
+      success(`Resultado de validación: ${res.mensaje}`, 'Conexión SUNAT');
+    } catch (err: any) {
+      error('Fallo en validación SUNAT: ' + (err.message || 'Error'), 'Error de Conexión');
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    let importedCount = 0;
-    const nuevosComprobantes: Comprobante[] = [];
+    const payloadArchivos: Array<{ nombre: string; contenidoBase64: string }> = [];
 
-    Array.from(files).forEach(file => {
-      if (file.name.endsWith('.xml')) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const content = e.target?.result as string;
-          if (content) {
-            try {
-              const comp = parseXmlUblInvoice(content, file.name);
-              nuevosComprobantes.push(comp);
-              importedCount++;
-              if (importedCount === files.length) {
-                onAddComprobantes(nuevosComprobantes, 'COMPRAS');
-                setUploadFeedback(`Se importaron y procesaron ${importedCount} archivo(s) XML UBL 2.1 correctamente.`);
-              }
-            } catch (err) {
-              console.error('Error parseando XML:', err);
-            }
-          }
-        };
-        reader.readAsText(file);
-      }
-    });
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      const buffer = await f.arrayBuffer();
+      const base64 = btoa(
+        new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+      );
+      payloadArchivos.push({ nombre: f.name, contenidoBase64: base64 });
+    }
+
+    try {
+      const res: any = await importarXmlMutation.mutateAsync(payloadArchivos);
+      setUploadFeedback(`Importación completada: ${res.exitosos} exitoso(s), ${res.fallidos} fallido(s).`);
+      await refetchXml();
+      success(`Importación de XML completada: ${res.exitosos} comprobante(s) procesados.`, 'Carga UBL');
+    } catch (err: any) {
+      error('Error en importación XML: ' + (err.message || 'Error'), 'Fallo XML');
+    }
+  };
+
+  const handleExportarPle = async (codigoLibro: string) => {
+    try {
+      const res: any = await exportarPleMutation.mutateAsync({
+        periodo: periodoPle,
+        codigoLibro,
+        ruc: empresa.ruc
+      });
+      success('Trabajo de generación de libro PLE 5.2 encolado exitosamente.', 'PLE 5.2 Encolado');
+    } catch (err: any) {
+      error('Error exportando libro PLE: ' + (err.message || 'Error'), 'Error');
+    }
   };
 
   return (
     <div className="space-y-6">
-      {/* View Header */}
+      {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
             <KeyRound className="w-5 h-5 text-amber-500" />
-            Conexión con SUNAT & Sincronizador SIRE
+            Integración SUNAT, XML UBL y Libros Electrónicos (PLE)
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Automatiza la descarga directa de propuestas RCE / RVIE, archivos XML, representación impresa PDF y constancias CDR.
+            Gestión criptográfica de credenciales SOL (AES-256-GCM), validador seguro anti-XXE y generación oficial PLE 5.2.
           </p>
         </div>
 
+        {/* State Banner */}
+        <div className="flex items-center gap-2">
+          {estadoConexion?.modoSimulado ? (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold">
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+              <span>MODO SIMULADO (Sandbox SUNAT)</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold">
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span>CONEXIÓN REAL PRODUCCIÓN</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Navigation Subtabs */}
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
         <button
-          onClick={handleRunSunatSync}
-          disabled={isSyncing}
-          className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white text-xs font-bold flex items-center gap-2 shadow-xs transition cursor-pointer"
+          onClick={() => setActiveTab('conexion')}
+          className={`px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${
+            activeTab === 'conexion'
+              ? 'bg-slate-900 text-white shadow-xs'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+          }`}
         >
-          <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-          {isSyncing ? 'Conectando con SUNAT...' : 'Descargar Propuesta SIRE / Clave SOL'}
+          Credenciales & Conexión SUNAT
+        </button>
+        <button
+          onClick={() => setActiveTab('xml')}
+          className={`px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${
+            activeTab === 'xml'
+              ? 'bg-slate-900 text-white shadow-xs'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+          }`}
+        >
+          Importador Seguro XML / CDR
+        </button>
+        <button
+          onClick={() => setActiveTab('ple')}
+          className={`px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${
+            activeTab === 'ple'
+              ? 'bg-slate-900 text-white shadow-xs'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+          }`}
+        >
+          Libros Electrónicos PLE 5.2
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Credentials Form (5 cols) */}
-        <div className="lg:col-span-5 space-y-4">
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <Lock className="w-4 h-4 text-emerald-600" />
-                Credenciales Clave SOL & API SIRE
-              </h3>
-              <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-semibold">
-                Almacenamiento Seguro
-              </span>
-            </div>
-
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="block text-slate-600 font-semibold mb-1">RUC Activo:</label>
-                <input
-                  type="text"
-                  disabled
-                  value={empresa.ruc}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-500 font-mono"
-                />
+      {/* TAB 1: CREDENCIALES & CONEXIÓN */}
+      {activeTab === 'conexion' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-6 space-y-4">
+            <form onSubmit={handleGuardarCredenciales} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-emerald-600" />
+                  Credenciales Clave SOL & API SIRE (Cifrado AES-256-GCM)
+                </h3>
+                <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-semibold border border-emerald-200">
+                  Solo Escritura
+                </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-3 text-xs">
                 <div>
-                  <label className="block text-slate-700 font-semibold mb-1">Usuario SOL:</label>
+                  <label className="block text-slate-600 font-semibold mb-1">RUC:</label>
                   <input
                     type="text"
-                    value={usuarioSol}
-                    onChange={(e) => setUsuarioSol(e.target.value)}
-                    placeholder="MODDATOS"
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-3 py-2 text-slate-900 font-mono"
+                    disabled
+                    value={empresa.ruc}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-500 font-mono"
                   />
                 </div>
-                <div>
-                  <label className="block text-slate-700 font-semibold mb-1">Clave SOL:</label>
-                  <input
-                    type="password"
-                    value={claveSol}
-                    onChange={(e) => setClaveSol(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-3 py-2 text-slate-900 font-mono"
-                  />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1">Usuario SOL:</label>
+                    <input
+                      type="text"
+                      value={usuarioSol}
+                      onChange={(e) => setUsuarioSol(e.target.value)}
+                      placeholder="MODDATOS"
+                      required
+                      className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-3 py-2 text-slate-900 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1">Clave SOL:</label>
+                    <input
+                      type="password"
+                      value={claveSol}
+                      onChange={(e) => setClaveSol(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-3 py-2 text-slate-900 font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1">Client ID (Opcional):</label>
+                    <input
+                      type="text"
+                      value={clientId}
+                      onChange={(e) => setClientId(e.target.value)}
+                      placeholder="ID API SUNAT"
+                      className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-3 py-2 text-slate-900 font-mono text-[11px]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1">Client Secret (Opcional):</label>
+                    <input
+                      type="password"
+                      value={clientSecret}
+                      onChange={(e) => setClientSecret(e.target.value)}
+                      placeholder="Secret API SUNAT"
+                      className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-3 py-2 text-slate-900 font-mono text-[11px]"
+                    />
+                  </div>
+                </div>
+
+                <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-xl space-y-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="simuladoCheck"
+                      checked={modoSimulado}
+                      onChange={(e) => setModoSimulado(e.target.checked)}
+                      className="rounded border-slate-300"
+                    />
+                    <label htmlFor="simuladoCheck" className="text-xs font-bold text-amber-900 cursor-pointer">
+                      Operar en MODO SIMULADO (Sandbox de prueba)
+                    </label>
+                  </div>
+                  <p className="text-[11px] text-amber-800 leading-relaxed">
+                    Siguiendo la regla de control estricto, el sistema opera con el simulador determinista oficial hasta que autorices conexiones en vivo.
+                  </p>
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="submit"
+                    disabled={guardarMutation.isPending}
+                    className="flex-1 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-semibold text-xs transition cursor-pointer"
+                  >
+                    {guardarMutation.isPending ? 'Guardando...' : 'Guardar Credenciales Cifradas'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleValidarConexion}
+                    disabled={validarMutation.isPending}
+                    className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-bold text-xs flex items-center gap-1.5 transition cursor-pointer"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${validarMutation.isPending ? 'animate-spin' : ''}`} />
+                    Validar Conexión
+                  </button>
                 </div>
               </div>
-
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1">Client ID (API SIRE):</label>
-                <input
-                  type="text"
-                  value={clientIdSire}
-                  onChange={(e) => setClientIdSire(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-3 py-2 text-slate-900 font-mono text-[11px]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1">Client Secret (API SIRE):</label>
-                <input
-                  type="password"
-                  value={clientSecretSire}
-                  onChange={(e) => setClientSecretSire(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-3 py-2 text-slate-900 font-mono text-[11px]"
-                />
-              </div>
-
-              <button
-                onClick={handleSaveCredentials}
-                className="w-full mt-2 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition cursor-pointer"
-              >
-                Guardar Credenciales
-              </button>
-            </div>
+            </form>
           </div>
 
-          {/* Bulk XML Uploader */}
+          <div className="lg:col-span-6 space-y-4">
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-3">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-blue-600" />
+                Estado Real de la Conexión
+              </h3>
+
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Configurado:</span>
+                  <span className="font-bold text-slate-800">{estadoConexion?.configurado ? 'SÍ' : 'NO'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Estado de Validación:</span>
+                  <span className={`font-bold ${
+                    estadoConexion?.estado === 'CONECTADO' ? 'text-emerald-600' :
+                    estadoConexion?.estado === 'MODO_SIMULADO' ? 'text-amber-600' :
+                    estadoConexion?.estado === 'ERROR' ? 'text-rose-600' : 'text-slate-500'
+                  }`}>
+                    {estadoConexion?.estado || 'SIN CONFIGURAR'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Último Chequeo:</span>
+                  <span className="font-mono text-slate-700">{estadoConexion?.ultimoChequeo ? new Date(estadoConexion.ultimoChequeo).toLocaleString() : 'Pendiente'}</span>
+                </div>
+                {estadoConexion?.ultimoError && (
+                  <div className="p-2 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 text-[11px]">
+                    {estadoConexion.ultimoError}
+                  </div>
+                )}
+              </div>
+
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-900 text-xs space-y-1">
+                <div className="font-bold flex items-center gap-1.5">
+                  <Info className="w-4 h-4" />
+                  Política de Seguridad Estricta
+                </div>
+                <p className="text-[11px] text-blue-800">
+                  Las credenciales nunca viajan en claro al navegador en las respuestas GET. Toda comunicación externa se realiza exclusivamente desde el backend en segundo plano con límites de tasa.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 2: IMPORTADOR XML / CDR */}
+      {activeTab === 'xml' && (
+        <div className="space-y-4">
           <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-3">
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               <UploadCloud className="w-4 h-4 text-blue-600" />
-              Importador Masivo de XML / ZIP (UBL 2.1)
+              Importación Individual y Masiva de Comprobantes XML UBL 2.1 & CDR
             </h3>
             <p className="text-xs text-slate-500">
-              ¿Descargaste facturas desde el portal SOL de SUNAT? Arrástralas para procesar su contabilidad y generar su PDF automáticamente.
+              Procesador protegido contra ataques XXE (entidades externas deshabilitadas), archivos sobredimensionados y bombas ZIP.
             </p>
 
             <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-blue-200 hover:border-blue-500 rounded-2xl bg-blue-50/30 cursor-pointer transition">
               <FileCode className="w-8 h-8 text-blue-600 mb-2" />
-              <span className="text-xs font-bold text-slate-800">Seleccionar archivos XML o ZIP</span>
-              <span className="text-[10px] text-slate-500 mt-1">Facturas 01, Boletas 03, Notas de Crédito 07</span>
+              <span className="text-xs font-bold text-slate-800">Seleccionar archivos XML o comprimidos ZIP</span>
+              <span className="text-[10px] text-slate-500 mt-1">Límites: Máx 5 MB por XML, 20 MB por ZIP, hasta 50 archivos por lote</span>
               <input
                 type="file"
                 multiple
@@ -247,81 +391,123 @@ export const SunatSyncView: React.FC<SunatSyncViewProps> = ({
               </div>
             )}
           </div>
-        </div>
 
-        {/* Sync Progress & Logs Console (7 cols) */}
-        <div className="lg:col-span-7 space-y-4">
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <Terminal className="w-4 h-4 text-blue-600" />
-                Monitor de Sincronización en Tiempo Real
-              </h3>
-              <div className="flex items-center gap-2 text-xs">
-                {isSyncing ? (
-                  <span className="flex items-center gap-1.5 text-amber-700 font-semibold bg-amber-50 px-2 py-0.5 rounded-full">
-                    <Clock className="w-3.5 h-3.5 animate-spin" /> Conectando...
-                  </span>
+          {/* List of XMLs */}
+          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
+            <div className="p-4 bg-slate-50 border-b border-slate-200 font-bold text-xs text-slate-800">
+              Comprobantes XML & CDRs Procesados ({xmlList.length})
+            </div>
+            <table className="w-full text-left border-collapse text-xs">
+              <thead className="bg-white text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
+                <tr>
+                  <th className="py-2.5 px-3">Archivo</th>
+                  <th className="py-2.5 px-3">Comprobante</th>
+                  <th className="py-2.5 px-3">Emisión</th>
+                  <th className="py-2.5 px-3">Emisor / RUC</th>
+                  <th className="py-2.5 px-3 text-right">Total</th>
+                  <th className="py-2.5 px-3 text-center">Estado CDR</th>
+                  <th className="py-2.5 px-3 text-center">Procesamiento</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-700">
+                {xmlList.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-6 text-center text-slate-400">
+                      No se han importado archivos XML en este período.
+                    </td>
+                  </tr>
                 ) : (
-                  <span className="flex items-center gap-1.5 text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> En espera
-                  </span>
+                  xmlList.map((x: any) => (
+                    <tr key={x.id} className="hover:bg-slate-50 transition">
+                      <td className="py-2 px-3 font-mono font-medium text-slate-800 truncate max-w-[180px]">{x.nombreArchivo}</td>
+                      <td className="py-2 px-3 font-mono font-bold text-slate-900">{x.serie}-{x.numero}</td>
+                      <td className="py-2 px-3 text-slate-600 font-mono">{x.fechaEmision}</td>
+                      <td className="py-2 px-3">
+                        <div className="font-medium text-slate-800 truncate max-w-[200px]">{x.razonSocialEmisor}</div>
+                        <span className="text-[10px] text-slate-400 font-mono">{x.rucEmisor}</span>
+                      </td>
+                      <td className="py-2 px-3 text-right font-mono font-bold text-slate-900">S/ {Number(x.total).toFixed(2)}</td>
+                      <td className="py-2 px-3 text-center">
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                          {x.cdrEstado || 'ACEPTADO'}
+                        </span>
+                      </td>
+                      <td className="py-2 px-3 text-center">
+                        <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
+                          {x.estadoProcesamiento}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
                 )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: LIBROS ELECTRÓNICOS PLE 5.2 */}
+      {activeTab === 'ple' && (
+        <div className="space-y-4">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-emerald-600" />
+                  Generador de Libros Electrónicos PLE 5.2 (SUNAT)
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Generación oficial a partir de asientos y registros contabilizados con validación de semáforo previo.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-600 font-medium">Período:</span>
+                <input
+                  type="month"
+                  value={periodoPle}
+                  onChange={(e) => setPeriodoPle(e.target.value)}
+                  className="px-3 py-1.5 text-xs font-semibold border border-slate-200 rounded-xl bg-white text-slate-800"
+                />
               </div>
             </div>
 
-            {/* Progress Bar */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs">
-                <span className="text-slate-600 font-medium">{currentSyncStep || 'Listo para sincronizar.'}</span>
-                <span className="text-blue-700 font-bold font-mono">{syncProgress}%</span>
-              </div>
-              <div className="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden">
-                <div 
-                  className="h-full bg-blue-600 transition-all duration-300 rounded-full"
-                  style={{ width: `${syncProgress}%` }}
-                ></div>
-              </div>
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+              {pleLibros.map((libro) => (
+                <div key={libro.codigoLibro} className="p-4 rounded-xl border border-slate-200 bg-white hover:border-slate-300 shadow-xs space-y-3 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-mono text-xs font-bold text-slate-800">{libro.codigoLibro}</span>
+                      {libro.validadoOficial ? (
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                          Validado Oficial
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full" title="Requiere confirmación oficial">
+                          Vista Previa No Oficial
+                        </span>
+                      )}
+                    </div>
+                    <h4 className="text-xs font-bold text-slate-900">{libro.nombreLibro}</h4>
+                    <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                      {libro.especificacionNormativa}
+                    </p>
+                  </div>
 
-            {/* Terminal Log Box */}
-            <div className="bg-slate-900 rounded-xl p-4 font-mono text-xs text-slate-300 h-64 overflow-y-auto space-y-1 shadow-inner">
-              <div className="text-slate-500">// SUNAT SIRE Connector & Clave SOL Client v2.5</div>
-              {syncLogs.length === 0 && (
-                <div className="text-slate-500 mt-2">
-                  // Presiona "Descargar Propuesta SIRE / Clave SOL" para iniciar la conexión automatizada.
-                </div>
-              )}
-              {syncLogs.map((log, idx) => (
-                <div 
-                  key={idx} 
-                  className={`leading-relaxed ${
-                    log.includes('[FINALIZADO]') ? 'text-emerald-400 font-bold' :
-                    log.includes('[ESTADO]') || log.includes('[TOKEN]') ? 'text-amber-300 font-medium' :
-                    'text-slate-300'
-                  }`}
-                >
-                  {log}
+                  <button
+                    onClick={() => handleExportarPle(libro.codigoLibro)}
+                    disabled={exportarPleMutation.isPending}
+                    className="w-full py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    {libro.validadoOficial ? 'Generar PLE Oficial' : 'Generar Vista Previa'}
+                  </button>
                 </div>
               ))}
             </div>
           </div>
-
-          {/* Quick Stats on Local DB */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs text-xs">
-              <span className="text-slate-500 font-medium">Facturas de Compra (RCE):</span>
-              <div className="text-2xl font-black text-slate-900 font-mono mt-1">{compras.length}</div>
-              <span className="text-emerald-700 text-[11px] font-semibold">Total S/ {compras.reduce((a, b) => a + b.total, 0).toFixed(2)}</span>
-            </div>
-            <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs text-xs">
-              <span className="text-slate-500 font-medium">Facturas de Venta (RVIE):</span>
-              <div className="text-2xl font-black text-slate-900 font-mono mt-1">{ventas.length}</div>
-              <span className="text-blue-700 text-[11px] font-semibold">Total S/ {ventas.reduce((a, b) => a + b.total, 0).toFixed(2)}</span>
-            </div>
-          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

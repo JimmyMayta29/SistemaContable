@@ -8,7 +8,15 @@ const router = Router();
 router.use(requireAuth);
 
 router.get('/', empresaController.listar);
-router.get('/:id', empresaController.obtener);
+router.get('/:id', requireEmpresaMembership(), empresaController.obtener);
+router.get('/:id/verificar-acceso', requireEmpresaMembership(), (req, res) => {
+  res.json({
+    permitida: true,
+    empresaId: req.empresaId,
+    rolEnEmpresa: req.userRolEnEmpresa,
+    usuarioId: req.user?.id
+  });
+});
 router.post('/', validateBody(crearEmpresaSchema), empresaController.crear);
 
 router.post(

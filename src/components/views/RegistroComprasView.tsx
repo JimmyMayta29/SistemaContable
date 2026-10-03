@@ -25,6 +25,7 @@ import { operacionesApi } from '../../api/operacionesApi';
 import { generarSireRceTxt, exportarComprobantesCsv } from '../../services/sireTxtGenerator';
 import { exportarRegistroComprasPdf } from '../../services/pdfExportService';
 import { VisorDocumentoSunatModal } from '../modals/VisorDocumentoSunatModal';
+import { useToast } from '../../context/ToastContext';
 
 interface RegistroComprasViewProps {
   compras: Comprobante[];
@@ -40,6 +41,7 @@ export const RegistroComprasView: React.FC<RegistroComprasViewProps> = ({
   periodo,
   onGenerarAsientos
 }) => {
+  const { success, error } = useToast();
   const [activeTab, setActiveTab] = useState<'LIBRO' | 'DIGITACION'>('LIBRO');
   const [searchTerm, setSearchTerm] = useState('');
   const [filtroTipo, setFiltroTipo] = useState<string>('TODOS');
@@ -234,8 +236,9 @@ export const RegistroComprasView: React.FC<RegistroComprasViewProps> = ({
       setNuevoProvRuc('');
       setNuevoProvRazon('');
       setNuevoProvDireccion('');
+      success('Proveedor registrado en el catálogo de anexos con éxito.', 'Proveedor Guardado');
     } catch (err: any) {
-      alert('Error registrando proveedor: ' + (err?.response?.data?.message || err.message));
+      error('Error registrando proveedor: ' + (err?.response?.data?.message || err.message), 'Fallo al Guardar');
     }
   };
 
@@ -246,8 +249,9 @@ export const RegistroComprasView: React.FC<RegistroComprasViewProps> = ({
       setModalAnular({ isOpen: false, id: '', serieNumero: '', motivo: '' });
       refetchCompras();
       refetchLibro();
+      success('Comprobante de compra anulado conforme a normativa SUNAT.', 'Compra Anulada');
     } catch (err: any) {
-      alert('Error anulando comprobante: ' + (err?.response?.data?.message || err.message));
+      error('Error anulando comprobante: ' + (err?.response?.data?.message || err.message), 'Fallo de Anulación');
     }
   };
 

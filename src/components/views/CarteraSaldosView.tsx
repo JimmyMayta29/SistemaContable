@@ -27,12 +27,14 @@ import {
   useAplicarCobranza 
 } from '../../hooks/useOperaciones';
 import { operacionesApi } from '../../api/operacionesApi';
+import { useToast } from '../../context/ToastContext';
 
 interface CarteraSaldosViewProps {
   empresaId: string;
 }
 
 export const CarteraSaldosView: React.FC<CarteraSaldosViewProps> = ({ empresaId }) => {
+  const { success, error } = useToast();
   const [tabTipo, setTabTipo] = useState<'CXP' | 'CXC'>('CXP');
   const [searchTerm, setSearchTerm] = useState('');
   const [fechaCorte, setFechaCorte] = useState(() => new Date().toISOString().substring(0, 10));
@@ -105,13 +107,13 @@ export const CarteraSaldosView: React.FC<CarteraSaldosViewProps> = ({ empresaId 
         total: montoNota
       });
 
-      alert(`✅ ${tipoNota === '07' ? 'Nota de Crédito' : 'Nota de Débito'} aplicada correctamente.`);
+      success(`${tipoNota === '07' ? 'Nota de Crédito' : 'Nota de Débito'} aplicada correctamente.`, 'Comprobante Vinculado');
       setIsNotaModalOpen(false);
       refetchCxp();
       refetchCxc();
       refetchAnt();
     } catch (err: any) {
-      alert('Error aplicando nota: ' + (err?.response?.data?.message || err.message));
+      error('Error aplicando nota: ' + (err?.response?.data?.message || err.message), 'Fallo al Aplicar');
     }
   };
 
@@ -139,8 +141,9 @@ export const CarteraSaldosView: React.FC<CarteraSaldosViewProps> = ({ empresaId 
       refetchCxp();
       refetchCxc();
       refetchAnt();
+      success('Aplicación contable registrada exitosamente.', 'Operación Exitosa');
     } catch (err: any) {
-      alert('Error en aplicación: ' + (err?.response?.data?.message || err.message));
+      error('Error en aplicación: ' + (err?.response?.data?.message || err.message), 'Fallo en Aplicación');
     }
   };
 

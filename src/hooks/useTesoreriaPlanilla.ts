@@ -12,7 +12,10 @@ import {
 export function useCuentasFinancieras(empresaId: string) {
   return useQuery({
     queryKey: ['cuentasFinancieras', empresaId],
-    queryFn: () => tesoreriaPlanillaApi.listarCuentas(empresaId),
+    queryFn: async () => {
+      const data = await tesoreriaPlanillaApi.listarCuentas(empresaId);
+      return data || [];
+    },
     enabled: Boolean(empresaId)
   });
 }
@@ -32,7 +35,10 @@ export function useCrearCuentaFinanciera(empresaId: string) {
 export function useMovimientosTesoreria(empresaId: string, params?: any) {
   return useQuery({
     queryKey: ['movimientosTesoreria', empresaId, params],
-    queryFn: () => tesoreriaPlanillaApi.listarMovimientos(empresaId, params),
+    queryFn: async () => {
+      const data = await tesoreriaPlanillaApi.listarMovimientos(empresaId, params);
+      return data || { items: [], total: 0 };
+    },
     enabled: Boolean(empresaId)
   });
 }
@@ -85,7 +91,10 @@ export function useRegistrarTransferencia(empresaId: string) {
 export function useConciliacionBancaria(empresaId: string, cuentaFinancieraId: string, periodoId: string, fechaCorte?: string) {
   return useQuery({
     queryKey: ['conciliacion', empresaId, cuentaFinancieraId, periodoId, fechaCorte],
-    queryFn: () => tesoreriaPlanillaApi.obtenerConciliacion(empresaId, cuentaFinancieraId, periodoId, fechaCorte),
+    queryFn: async () => {
+      const data = await tesoreriaPlanillaApi.obtenerConciliacion(empresaId, cuentaFinancieraId, periodoId, fechaCorte);
+      return data || null;
+    },
     enabled: Boolean(empresaId && cuentaFinancieraId)
   });
 }
@@ -138,7 +147,10 @@ export function useCerrarConciliacion(empresaId: string) {
 export function useHonorarios(empresaId: string, params?: any) {
   return useQuery({
     queryKey: ['honorarios', empresaId, params],
-    queryFn: () => tesoreriaPlanillaApi.listarHonorarios(empresaId, params),
+    queryFn: async () => {
+      const data = await tesoreriaPlanillaApi.listarHonorarios(empresaId, params);
+      return data || [];
+    },
     enabled: Boolean(empresaId)
   });
 }
@@ -171,7 +183,10 @@ export function useAnularHonorario(empresaId: string) {
 export function useTrabajadores(empresaId: string) {
   return useQuery({
     queryKey: ['trabajadores', empresaId],
-    queryFn: () => tesoreriaPlanillaApi.listarTrabajadores(empresaId),
+    queryFn: async () => {
+      const data = await tesoreriaPlanillaApi.listarTrabajadores(empresaId);
+      return data || [];
+    },
     enabled: Boolean(empresaId)
   });
 }
@@ -229,7 +244,10 @@ export function useExportarPlame(empresaId: string) {
 export function useFlujoCaja(empresaId: string, desde?: string, hasta?: string) {
   return useQuery({
     queryKey: ['flujoCaja', empresaId, desde, hasta],
-    queryFn: () => tesoreriaPlanillaApi.obtenerFlujoCaja(empresaId, desde, hasta),
+    queryFn: async () => {
+      const data = await tesoreriaPlanillaApi.obtenerFlujoCaja(empresaId, desde, hasta);
+      return data || null;
+    },
     enabled: Boolean(empresaId)
   });
 }

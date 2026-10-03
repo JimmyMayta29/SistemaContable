@@ -1,4 +1,5 @@
 import { db } from '../config/database';
+import { auditoriaChainService } from '../services/auditoriaChainService';
 
 export interface RegistroAuditoria {
   tenantId?: string;
@@ -52,6 +53,18 @@ export const auditoriaRepository = {
       createdAt: new Date().toISOString(),
       ...registro
     });
+
+    if (registro.empresaId) {
+      await auditoriaChainService.registrar({
+        empresaId: registro.empresaId,
+        usuarioId: registro.usuarioId || 'usr-sistema',
+        tablaAfectada: registro.tablaAfectada || registro.tabla || 'general',
+        registroId: registro.registroId,
+        accion: registro.accion,
+        datosAnteriores: registro.datosAnteriores || registro.valoresAnteriores,
+        datosNuevos: registro.datosNuevos || registro.valoresNuevos
+      });
+    }
   },
 
   async listarPorEmpresa(empresaId: string, limit = 50) {

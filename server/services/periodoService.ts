@@ -155,6 +155,16 @@ export const periodoService = {
     return periodo ? periodo.estado : 'ABIERTO';
   },
 
+  async estaCerrado(empresaId: string, periodoIdOrCodigo: string): Promise<boolean> {
+    const cleanCodigo = periodoIdOrCodigo.replace(/^per-/, '');
+    const p = await this.obtenerPorCodigo(empresaId, cleanCodigo);
+    if (!p) {
+      const byId = PERIODOS_MEMORIA.find(x => x.id === periodoIdOrCodigo && (x.empresaId === empresaId || x.empresaId === 'emp-01'));
+      return byId ? byId.estado === 'CERRADO' : false;
+    }
+    return p.estado === 'CERRADO';
+  },
+
   async abrirPeriodo(empresaId: string, mesOcodigo: string, userId: string) {
     let p = PERIODOS_MEMORIA.find(x => (x.empresaId === empresaId || x.empresaId === 'emp-01') && x.codigoPeriodo === mesOcodigo);
     if (!p) {
@@ -195,7 +205,7 @@ export const periodoService = {
     return p;
   },
 
-  async reabrirPeriodo(empresaId: string, mesOcodigo: string, role: string, userId: string) {
+  async reabrirPeriodo(empresaId: string, mesOcodigo: string, role: string = 'ADMIN_ESTUDIO', userId?: string) {
     let p = PERIODOS_MEMORIA.find(x => (x.empresaId === empresaId || x.empresaId === 'emp-01') && x.codigoPeriodo === mesOcodigo);
     if (p) {
       p.estado = 'ABIERTO';

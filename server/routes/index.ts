@@ -5,6 +5,12 @@ import { migrationRoutes } from './migrationRoutes';
 import { asientoRoutes } from './asientoRoutes';
 import { operacionesRoutes } from './operacionesRoutes';
 import { tesoreriaPlanillaRoutes } from './tesoreriaPlanillaRoutes';
+import { sunatSirePleRoutes } from './sunatSirePleRoutes';
+import { tributarioAnualRoutes } from './tributarioAnualRoutes';
+import { activosKardexRoutes } from './activosKardexRoutes';
+import { authRoutes } from './authRoutes';
+import { requireAuth } from '../middlewares/auth';
+import { empresaGuard } from '../middlewares/empresaGuard';
 import { db } from '../config/database';
 
 const router = Router();
@@ -14,16 +20,30 @@ router.get('/health', (req, res) => {
     status: 'UP',
     database: db.isPostgresConnected() ? 'POSTGRESQL_CONNECTED' : 'IN_MEMORY_FALLBACK',
     environment: process.env.NODE_ENV || 'development',
-    version: '1.4.0-fase4',
+    version: '1.7.0-fase7',
     timestamp: new Date().toISOString()
   });
 });
 
+// Guard de acceso por empresa para rutas /e/:empresaId/...
+router.get('/e/:empresaId/verificar-acceso', requireAuth, empresaGuard(), (req, res) => {
+  res.json({
+    permitida: true,
+    empresaId: req.empresaId,
+    rolEnEmpresa: req.userRolEnEmpresa,
+    usuarioId: req.user?.id
+  });
+});
+
+router.use('/auth', authRoutes);
 router.use('/empresas', empresaRoutes);
 router.use('/parametros', parametroRoutes);
 router.use('/migration', migrationRoutes);
 router.use('/', asientoRoutes);
 router.use('/', operacionesRoutes);
 router.use('/', tesoreriaPlanillaRoutes);
+router.use('/', sunatSirePleRoutes);
+router.use('/', tributarioAnualRoutes);
+router.use('/', activosKardexRoutes);
 
 export const apiRoutes = router;

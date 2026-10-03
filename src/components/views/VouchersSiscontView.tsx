@@ -30,6 +30,7 @@ import {
   useDuplicarAsiento 
 } from '../../hooks/useAsientos';
 import { apiClient } from '../../api/client';
+import { useToast } from '../../context/ToastContext';
 
 interface VouchersSiscontViewProps {
   empresaId: string;
@@ -42,6 +43,7 @@ export const VouchersSiscontView: React.FC<VouchersSiscontViewProps> = ({
   periodo,
   isPeriodoCerrado = false
 }) => {
+  const { success, error, warning } = useToast();
   const [subdiarioFiltro, setSubdiarioFiltro] = useState<string>('TODOS');
   const [estadoFiltro, setEstadoFiltro] = useState<string>('TODOS');
   const [searchTerm, setSearchTerm] = useState('');
@@ -170,7 +172,7 @@ export const VouchersSiscontView: React.FC<VouchersSiscontViewProps> = ({
 
   const handleQuitarLinea = (index: number) => {
     if (itemsVoucher.length <= 2) {
-      alert('Un asiento contable debe tener al menos 2 líneas para cumplir la partida doble.');
+      warning('Un asiento contable debe tener al menos 2 líneas para cumplir la partida doble.', 'Partida Doble');
       return;
     }
     setItemsVoucher(prev => prev.filter((_, idx) => idx !== index).map((item, idx) => ({ ...item, linea: idx + 1 })));
@@ -178,7 +180,7 @@ export const VouchersSiscontView: React.FC<VouchersSiscontViewProps> = ({
 
   const handleGuardarBorrador = async () => {
     if (isPeriodoCerrado) {
-      alert('Operación bloqueada: El período contable seleccionado se encuentra CERRADO.');
+      error('Operación bloqueada: El período contable seleccionado se encuentra CERRADO.', 'Período Cerrado');
       return;
     }
 
@@ -202,21 +204,23 @@ export const VouchersSiscontView: React.FC<VouchersSiscontViewProps> = ({
 
       setIsModalOpen(false);
       refetch();
+      success('Asiento contable guardado exitosamente.', 'Asiento Guardado');
     } catch (err: any) {
-      alert(`Error al guardar asiento: ${err.message}`);
+      error(`Error al guardar asiento: ${err.message}`, 'Fallo al Guardar');
     }
   };
 
   const handleContabilizarAsiento = async (id: string) => {
     if (isPeriodoCerrado) {
-      alert('No se puede contabilizar: El período se encuentra CERRADO.');
+      error('No se puede contabilizar: El período se encuentra CERRADO.', 'Período Cerrado');
       return;
     }
     try {
       await contabilizarMutation.mutateAsync(id);
       refetch();
+      success('Asiento contabilizado formalmente en el Libro Diario.', 'Asiento Contabilizado');
     } catch (err: any) {
-      alert(`Error al contabilizar: ${err.message}`);
+      error(`Error al contabilizar: ${err.message}`, 'Fallo al Contabilizar');
     }
   };
 
@@ -231,8 +235,9 @@ export const VouchersSiscontView: React.FC<VouchersSiscontViewProps> = ({
       setAsientoAAnularId(null);
       setMotivoAnulacion('');
       refetch();
+      success('Asiento contable anulado con registro en auditoría.', 'Asiento Anulado');
     } catch (err: any) {
-      alert(`Error al anular: ${err.message}`);
+      error(`Error al anular: ${err.message}`, 'Fallo al Anular');
     }
   };
 
@@ -240,8 +245,9 @@ export const VouchersSiscontView: React.FC<VouchersSiscontViewProps> = ({
     try {
       await duplicarMutation.mutateAsync(id);
       refetch();
+      success('Asiento duplicado en estado borrador listo para edición.', 'Asiento Duplicado');
     } catch (err: any) {
-      alert(`Error al duplicar: ${err.message}`);
+      error(`Error al duplicar: ${err.message}`, 'Fallo al Duplicar');
     }
   };
 

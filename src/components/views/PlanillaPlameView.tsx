@@ -25,6 +25,7 @@ import {
   useAnularPlanilla,
   useExportarPlame
 } from '../../hooks/useTesoreriaPlanilla';
+import { useToast } from '../../context/ToastContext';
 
 interface PlanillaPlameViewProps {
   empresaId?: string;
@@ -44,6 +45,7 @@ export const PlanillaPlameView: React.FC<PlanillaPlameViewProps> = ({
   const [activeTab, setActiveTab] = useState<'nomina' | 'trabajadores'>('nomina');
   const [isModalTrabajadorOpen, setIsModalTrabajadorOpen] = useState(false);
   const [isModalPlameInfoOpen, setIsModalPlameInfoOpen] = useState(false);
+  const { success, error, info } = useToast();
 
   // Queries
   const { data: apiTrabajadores = [], isLoading: loadingTrabajadores } = useTrabajadores(empresaId);
@@ -53,9 +55,51 @@ export const PlanillaPlameView: React.FC<PlanillaPlameViewProps> = ({
   const calcularPlanillaMutation = useCalcularPlanilla(empresaId);
   const contabilizarPlanillaMutation = useContabilizarPlanilla(empresaId);
   const anularPlanillaMutation = useAnularPlanilla(empresaId);
+  const exportarPlameMutation = useExportarPlame(empresaId);
 
   // State local de la planilla calculada
   const [planillaCalculada, setPlanillaCalculada] = useState<any>(null);
+  const [plameData, setPlameData] = useState<any>(null);
+  const [plameTab, setPlameTab] = useState<'rem' | 'jor' | 'snl' | 'des'>('rem');
+
+  const handleAbrirExportarPlame = async () => {
+    setIsModalPlameInfoOpen(true);
+    let targetPlanillaId = planillaCalculada?.id;
+    if (!targetPlanillaId) {
+      try {
+        const p: any = await calcularPlanillaMutation.mutateAsync({ periodoId: `per-${periodo}`, mes: periodo });
+        setPlanillaCalculada(p);
+        targetPlanillaId = p.id;
+      } catch (e: any) {
+        console.error('Error calculando planilla previa:', e);
+      }
+    }
+    if (targetPlanillaId) {
+      try {
+        const res = await exportarPlameMutation.mutateAsync(targetPlanillaId);
+        setPlameData(res);
+      } catch (err: any) {
+        console.error('Error exportando PLAME:', err);
+      }
+    }
+  };
+
+  const handleDescargarZip = () => {
+    if (!plameData?.zipBase64) return;
+    const byteCharacters = atob(plameData.zipBase64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: 'application/zip' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = plameData.nombreArchivoZip || `0601${periodo.replace('-', '')}.zip`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   // Form states de nuevo trabajador
   const [tipoDoc, setTipoDoc] = useState('1');
@@ -115,8 +159,9 @@ export const PlanillaPlameView: React.FC<PlanillaPlameViewProps> = ({
       setNombres('');
       setApellidos('');
       setCargo('');
+      success('Trabajador registrado exitosamente en la nómina.', 'Trabajador Creado');
     } catch (err: any) {
-      alert('Error creando trabajador: ' + (err?.response?.data?.error || err.message));
+      error('Error creando trabajador: ' + (err?.response?.data?.error || err.message), 'Fallo al Crear');
     }
   };
 
@@ -127,19 +172,20 @@ export const PlanillaPlameView: React.FC<PlanillaPlameViewProps> = ({
         mes: periodo
       });
       setPlanillaCalculada(res);
+      success('Planilla mensual y aportes calculados conforme a Ley laboral.', 'Cálculo Conforme');
     } catch (err: any) {
-      alert('Error calculando planilla: ' + (err?.response?.data?.error || err.message));
+      error('Error calculando planilla: ' + (err?.response?.data?.error || err.message), 'Error');
     }
   };
 
   const handleContabilizar = async () => {
     if (!planillaCalculada) return;
     try {
-      const res = await contabilizarPlanillaMutation.mutateAsync(planillaCalculada.id);
+      const res: any = await contabilizarPlanillaMutation.mutateAsync(planillaCalculada.id);
       setPlanillaCalculada((prev: any) => ({ ...prev, estado: 'CONTABILIZADA', asientoId: res.asientoId }));
-      alert(`Planilla contabilizada exitosamente con Asiento N° ${res.asientoNumero || 'generado'}.`);
+      success(`Planilla contabilizada exitosamente con Asiento N° ${res.asientoNumero || 'generado'}.`, 'Nómina Contabilizada');
     } catch (err: any) {
-      alert('Error contabilizando planilla: ' + (err?.response?.data?.error || err.message));
+      error('Error contabilizando planilla: ' + (err?.response?.data?.error || err.message), 'Error');
     }
   };
 
@@ -182,10 +228,11 @@ export const PlanillaPlameView: React.FC<PlanillaPlameViewProps> = ({
           </div>
 
           <button
-            onClick={() => setIsModalPlameInfoOpen(true)}
-            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 border border-slate-300 transition cursor-pointer"
+            onClick={handleAbrirExportarPlame}
+            disabled={exportarPlameMutation.isPending}
+            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 border border-slate-300 transition cursor-pointer disabled:opacity-50"
           >
-            <Download className="w-4 h-4 text-emerald-600" />
+            <Download className={`w-4 h-4 text-emerald-600 ${exportarPlameMutation.isPending ? 'animate-bounce' : ''}`} />
             Exportar PLAME SUNAT
           </button>
 
@@ -553,33 +600,152 @@ export const PlanillaPlameView: React.FC<PlanillaPlameViewProps> = ({
         </div>
       )}
 
-      {/* MODAL EXPORTAR PLAME INFO */}
+      {/* MODAL EXPORTADOR OFICIAL PLAME */}
       {isModalPlameInfoOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-6 space-y-4">
-            <div className="flex items-center gap-3 text-amber-600">
-              <AlertCircle className="w-6 h-6 shrink-0" />
-              <h3 className="text-base font-bold text-slate-900">
-                Exportador PLAME (PDT 0601)
-              </h3>
-            </div>
-
-            <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-2">
-              <p className="font-bold">
-                Estado: Pendiente de implementación (Fase 6 - Libros y Exportaciones Oficiales).
-              </p>
-              <p>
-                La generación de archivos planos empaquetados (.rem, .jor, .snl, .tot) para el aplicativo oficial PLAME de SUNAT se habilita en la Fase 6, cumpliendo con la R.S. N° 183-2011/SUNAT.
-              </p>
-            </div>
-
-            <div className="flex justify-end">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-2xl w-full p-6 space-y-5 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
+                  <Download className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-slate-900">
+                      Exportador Oficial PLAME (PDT 0601 / T-Registro)
+                    </h3>
+                    <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full border border-emerald-200">
+                      R.S. N° 183-2011/SUNAT
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    Generación de archivos planos oficiales (.rem, .jor, .snl, .des) y paquete ZIP para carga automática.
+                  </p>
+                </div>
+              </div>
               <button
                 onClick={() => setIsModalPlameInfoOpen(false)}
-                className="px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-bold cursor-pointer"
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition cursor-pointer"
               >
-                Entendido
+                ✕
               </button>
+            </div>
+
+            {exportarPlameMutation.isPending && (
+              <div className="py-12 flex flex-col items-center justify-center space-y-3">
+                <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+                <p className="text-xs font-semibold text-slate-600">Generando estructuras oficiales y empaquetando archivo ZIP...</p>
+              </div>
+            )}
+
+            {plameData && !exportarPlameMutation.isPending && (
+              <div className="space-y-4">
+                {/* Resumen Cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider block">Paquete ZIP</span>
+                    <span className="text-xs font-bold text-slate-900 truncate block mt-0.5" title={plameData.nombreArchivoZip}>
+                      {plameData.nombreArchivoZip}
+                    </span>
+                  </div>
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider block">Trabajadores</span>
+                    <span className="text-sm font-bold text-emerald-600 block mt-0.5">
+                      {plameData.resumen?.totalTrabajadores || 0} asegurados
+                    </span>
+                  </div>
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider block">Recibos 4ta</span>
+                    <span className="text-sm font-bold text-blue-600 block mt-0.5">
+                      {plameData.resumen?.totalHonorarios || 0} comprobantes
+                    </span>
+                  </div>
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider block">Total Bruto</span>
+                    <span className="text-sm font-bold text-slate-900 block mt-0.5">
+                      S/ {Number(plameData.resumen?.totalRemuneracion || 0).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Tabs de estructuras */}
+                <div className="flex border-b border-slate-200 gap-1 text-xs">
+                  <button
+                    onClick={() => setPlameTab('rem')}
+                    className={`px-3 py-1.5 font-bold border-b-2 transition cursor-pointer ${
+                      plameTab === 'rem'
+                        ? 'border-emerald-600 text-emerald-700 bg-emerald-50/50'
+                        : 'border-transparent text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    .rem (Remuneraciones: {plameData.archivos?.rem?.totalLineas || 0})
+                  </button>
+                  <button
+                    onClick={() => setPlameTab('jor')}
+                    className={`px-3 py-1.5 font-bold border-b-2 transition cursor-pointer ${
+                      plameTab === 'jor'
+                        ? 'border-emerald-600 text-emerald-700 bg-emerald-50/50'
+                        : 'border-transparent text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    .jor (Jornada: {plameData.archivos?.jor?.totalLineas || 0})
+                  </button>
+                  <button
+                    onClick={() => setPlameTab('snl')}
+                    className={`px-3 py-1.5 font-bold border-b-2 transition cursor-pointer ${
+                      plameTab === 'snl'
+                        ? 'border-emerald-600 text-emerald-700 bg-emerald-50/50'
+                        : 'border-transparent text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    .snl (Conceptos: {plameData.archivos?.snl?.totalLineas || 0})
+                  </button>
+                  <button
+                    onClick={() => setPlameTab('des')}
+                    className={`px-3 py-1.5 font-bold border-b-2 transition cursor-pointer ${
+                      plameTab === 'des'
+                        ? 'border-emerald-600 text-emerald-700 bg-emerald-50/50'
+                        : 'border-transparent text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    .des (4ta Categoría: {plameData.archivos?.des?.totalLineas || 0})
+                  </button>
+                </div>
+
+                {/* Visor de estructura */}
+                <div className="bg-slate-900 rounded-xl p-3 text-slate-200 font-mono text-[11px] max-h-48 overflow-y-auto leading-relaxed border border-slate-800">
+                  <div className="text-[10px] text-slate-400 font-sans pb-1 mb-1 border-b border-slate-800 flex justify-between">
+                    <span>Estructura Oficial SUNAT (Delimitador: Pipe |)</span>
+                    <span>{plameData.archivos?.[plameTab]?.nombre}</span>
+                  </div>
+                  <pre className="whitespace-pre-wrap">
+                    {plameData.archivos?.[plameTab]?.contenido || '// Sin registros en este archivo plano'}
+                  </pre>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between pt-3 border-t border-slate-200">
+              <span className="text-[11px] text-slate-500">
+                Formato certificado para carga directa en el aplicativo PDT 0601 PLAME.
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsModalPlameInfoOpen(false)}
+                  className="px-4 py-2 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-50 transition cursor-pointer"
+                >
+                  Cerrar
+                </button>
+                {plameData?.zipBase64 && (
+                  <button
+                    onClick={handleDescargarZip}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+                  >
+                    <Download className="w-4 h-4" />
+                    Descargar Paquete ZIP Oficial (.zip)
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

@@ -179,129 +179,135 @@ export interface FlujoCajaApi {
   }>;
 }
 
+function extractData<T>(res: any, fallback?: T): T {
+  if (res && res.data !== undefined) return res.data;
+  if (res !== undefined) return res;
+  return fallback as T;
+}
+
 export const tesoreriaPlanillaApi = {
   // Cuentas Financieras
   async listarCuentas(empresaId: string): Promise<CuentaFinancieraApi[]> {
-    const res = await apiClient.get<{ success: boolean; data: CuentaFinancieraApi[] }>(`/empresas/${empresaId}/cuentas-financieras`);
-    return res.data.data;
+    const res = await apiClient.get<any>(`/empresas/${empresaId}/cuentas-financieras`);
+    return extractData<CuentaFinancieraApi[]>(res, []);
   },
 
   async crearCuenta(empresaId: string, datos: any): Promise<CuentaFinancieraApi> {
-    const res = await apiClient.post<{ success: boolean; data: CuentaFinancieraApi }>(`/empresas/${empresaId}/cuentas-financieras`, datos);
-    return res.data.data;
+    const res = await apiClient.post<any>(`/empresas/${empresaId}/cuentas-financieras`, datos);
+    return extractData<CuentaFinancieraApi>(res);
   },
 
   // Movimientos
   async listarMovimientos(empresaId: string, params?: any): Promise<{ items: MovimientoTesoreriaApi[]; total: number }> {
-    const res = await apiClient.get<{ success: boolean; data: { items: MovimientoTesoreriaApi[]; total: number } }>(
+    const res = await apiClient.get<any>(
       `/empresas/${empresaId}/movimientos-tesoreria`,
       { params }
     );
-    return res.data.data;
+    return extractData<{ items: MovimientoTesoreriaApi[]; total: number }>(res, { items: [], total: 0 });
   },
 
   async registrarMovimiento(empresaId: string, datos: any): Promise<MovimientoTesoreriaApi> {
-    const res = await apiClient.post<{ success: boolean; data: MovimientoTesoreriaApi }>(
+    const res = await apiClient.post<any>(
       `/empresas/${empresaId}/movimientos-tesoreria`,
       datos
     );
-    return res.data.data;
+    return extractData<MovimientoTesoreriaApi>(res);
   },
 
   async anularMovimiento(empresaId: string, movimientoId: string, motivo: string) {
-    const res = await apiClient.post(`/empresas/${empresaId}/movimientos-tesoreria/${movimientoId}/anular`, { motivo });
-    return res.data;
+    const res = await apiClient.post<any>(`/empresas/${empresaId}/movimientos-tesoreria/${movimientoId}/anular`, { motivo });
+    return extractData(res);
   },
 
   // Transferencias
   async registrarTransferencia(empresaId: string, datos: any) {
-    const res = await apiClient.post(`/empresas/${empresaId}/transferencias`, datos);
-    return res.data.data;
+    const res = await apiClient.post<any>(`/empresas/${empresaId}/transferencias`, datos);
+    return extractData(res);
   },
 
   // Conciliación
   async importarExtracto(empresaId: string, datos: any) {
-    const res = await apiClient.post(`/empresas/${empresaId}/extractos`, datos);
-    return res.data.data;
+    const res = await apiClient.post<any>(`/empresas/${empresaId}/extractos`, datos);
+    return extractData(res);
   },
 
   async obtenerConciliacion(empresaId: string, cuentaFinancieraId: string, periodoId: string, fechaCorte?: string): Promise<ConciliacionResumenApi> {
-    const res = await apiClient.get<{ success: boolean; data: ConciliacionResumenApi }>(`/empresas/${empresaId}/conciliaciones`, {
+    const res = await apiClient.get<any>(`/empresas/${empresaId}/conciliaciones`, {
       params: { cuentaFinancieraId, periodoId, fechaCorte }
     });
-    return res.data.data;
+    return extractData<ConciliacionResumenApi>(res);
   },
 
   async conciliarPartida(empresaId: string, extractoLineaId: string, movimientoId: string) {
-    const res = await apiClient.post(`/empresas/${empresaId}/conciliaciones/conciliar`, { extractoLineaId, movimientoId });
-    return res.data;
+    const res = await apiClient.post<any>(`/empresas/${empresaId}/conciliaciones/conciliar`, { extractoLineaId, movimientoId });
+    return extractData(res);
   },
 
   async desconciliarPartida(empresaId: string, extractoLineaId: string) {
-    const res = await apiClient.post(`/empresas/${empresaId}/conciliaciones/desconciliar`, { extractoLineaId });
-    return res.data;
+    const res = await apiClient.post<any>(`/empresas/${empresaId}/conciliaciones/desconciliar`, { extractoLineaId });
+    return extractData(res);
   },
 
   async cerrarConciliacion(empresaId: string, cuentaFinancieraId: string, periodoId: string, fechaCorte: string) {
-    const res = await apiClient.post(`/empresas/${empresaId}/conciliaciones/cerrar`, { cuentaFinancieraId, periodoId, fechaCorte });
-    return res.data;
+    const res = await apiClient.post<any>(`/empresas/${empresaId}/conciliaciones/cerrar`, { cuentaFinancieraId, periodoId, fechaCorte });
+    return extractData(res);
   },
 
   // Honorarios
   async listarHonorarios(empresaId: string, params?: any): Promise<ReciboHonorarioApi[]> {
-    const res = await apiClient.get<{ success: boolean; data: ReciboHonorarioApi[] }>(`/empresas/${empresaId}/honorarios`, { params });
-    return res.data.data;
+    const res = await apiClient.get<any>(`/empresas/${empresaId}/honorarios`, { params });
+    return extractData<ReciboHonorarioApi[]>(res, []);
   },
 
   async registrarHonorario(empresaId: string, datos: any): Promise<ReciboHonorarioApi> {
-    const res = await apiClient.post<{ success: boolean; data: ReciboHonorarioApi }>(`/empresas/${empresaId}/honorarios`, datos);
-    return res.data.data;
+    const res = await apiClient.post<any>(`/empresas/${empresaId}/honorarios`, datos);
+    return extractData<ReciboHonorarioApi>(res);
   },
 
   async anularHonorario(empresaId: string, honorarioId: string, motivo: string) {
-    const res = await apiClient.post(`/empresas/${empresaId}/honorarios/${honorarioId}/anular`, { motivo });
-    return res.data;
+    const res = await apiClient.post<any>(`/empresas/${empresaId}/honorarios/${honorarioId}/anular`, { motivo });
+    return extractData(res);
   },
 
   // Trabajadores y Planillas
   async listarTrabajadores(empresaId: string): Promise<TrabajadorApi[]> {
-    const res = await apiClient.get<{ success: boolean; data: TrabajadorApi[] }>(`/empresas/${empresaId}/trabajadores`);
-    return res.data.data;
+    const res = await apiClient.get<any>(`/empresas/${empresaId}/trabajadores`);
+    return extractData<TrabajadorApi[]>(res, []);
   },
 
   async crearTrabajador(empresaId: string, datos: any): Promise<TrabajadorApi> {
-    const res = await apiClient.post<{ success: boolean; data: TrabajadorApi }>(`/empresas/${empresaId}/trabajadores`, datos);
-    return res.data.data;
+    const res = await apiClient.post<any>(`/empresas/${empresaId}/trabajadores`, datos);
+    return extractData<TrabajadorApi>(res);
   },
 
   async calcularPlanilla(empresaId: string, periodoId: string, mes: string): Promise<PlanillaApi> {
-    const res = await apiClient.post<{ success: boolean; data: PlanillaApi }>(`/empresas/${empresaId}/planillas/calcular`, {
+    const res = await apiClient.post<any>(`/empresas/${empresaId}/planillas/calcular`, {
       periodoId,
       mes
     });
-    return res.data.data;
+    return extractData<PlanillaApi>(res);
   },
 
   async contabilizarPlanilla(empresaId: string, planillaId: string) {
-    const res = await apiClient.post(`/empresas/${empresaId}/planillas/${planillaId}/contabilizar`);
-    return res.data;
+    const res = await apiClient.post<any>(`/empresas/${empresaId}/planillas/${planillaId}/contabilizar`);
+    return extractData(res);
   },
 
   async anularPlanilla(empresaId: string, planillaId: string, motivo: string) {
-    const res = await apiClient.post(`/empresas/${empresaId}/planillas/${planillaId}/anular`, { motivo });
-    return res.data;
+    const res = await apiClient.post<any>(`/empresas/${empresaId}/planillas/${planillaId}/anular`, { motivo });
+    return extractData(res);
   },
 
   async exportarPlame(empresaId: string, planillaId: string) {
-    const res = await apiClient.get(`/empresas/${empresaId}/planillas/${planillaId}/exportar-plame`);
-    return res.data.data;
+    const res = await apiClient.get<any>(`/empresas/${empresaId}/planillas/${planillaId}/exportar-plame`);
+    return extractData(res);
   },
 
   // Flujo de Caja
   async obtenerFlujoCaja(empresaId: string, desde?: string, hasta?: string): Promise<FlujoCajaApi> {
-    const res = await apiClient.get<{ success: boolean; data: FlujoCajaApi }>(`/empresas/${empresaId}/flujo-de-caja`, {
+    const res = await apiClient.get<any>(`/empresas/${empresaId}/flujo-de-caja`, {
       params: { desde, hasta }
     });
-    return res.data.data;
+    return extractData<FlujoCajaApi>(res);
   }
 };

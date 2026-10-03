@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { asientoService } from '../services/asientoService';
 import { contabilizacionService, TipoOperacionContable } from '../services/contabilizacionService';
 import { periodoService } from '../services/periodoService';
+import { librosEEFFService } from '../services/librosEEFFService';
 import { auditoriaRepository } from '../repositories/auditoriaRepository';
 import { successResponse, errorResponse } from '../utils/response';
 
@@ -235,20 +236,153 @@ export const asientoController = {
   async obtenerLibroDiario(req: Request, res: Response) {
     try {
       const empresaId = req.params.id || req.empresaId!;
-      const periodoId = req.query.periodoId as string;
-      const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
-      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
-
-      const resultado = await asientoService.listar(empresaId, {
-        periodoId,
-        estado: 'CONTABILIZADO',
-        page,
-        limit
-      });
-
-      return successResponse(res, resultado);
+      const periodo = (req.query.periodo as string) || (req.query.periodoId as string) || '2026-09';
+      const libro = await librosEEFFService.generarLibroDiario(empresaId, periodo);
+      return successResponse(res, libro);
     } catch (err: any) {
       return errorResponse(res, err.message);
+    }
+  },
+
+  async obtenerLibroMayor(req: Request, res: Response) {
+    try {
+      const empresaId = req.params.id || req.empresaId!;
+      const periodo = (req.query.periodo as string) || '2026-09';
+      const mayor = await librosEEFFService.generarLibroMayor(empresaId, periodo);
+      return successResponse(res, mayor);
+    } catch (err: any) {
+      return errorResponse(res, err.message);
+    }
+  },
+
+  async obtenerBalanceComprobacion(req: Request, res: Response) {
+    try {
+      const empresaId = req.params.id || req.empresaId!;
+      const periodo = (req.query.periodo as string) || '2026-09';
+      const balance = await librosEEFFService.generarBalanceComprobacion(empresaId, periodo);
+      return successResponse(res, balance);
+    } catch (err: any) {
+      return errorResponse(res, err.message);
+    }
+  },
+
+  async obtenerEstadoSituacionFinanciera(req: Request, res: Response) {
+    try {
+      const empresaId = req.params.id || req.empresaId!;
+      const periodo = (req.query.periodo as string) || '2026-09';
+      const es = await librosEEFFService.generarEstadoSituacionFinanciera(empresaId, periodo);
+      return successResponse(res, es);
+    } catch (err: any) {
+      return errorResponse(res, err.message);
+    }
+  },
+
+  async obtenerEstadoResultados(req: Request, res: Response) {
+    try {
+      const empresaId = req.params.id || req.empresaId!;
+      const periodo = (req.query.periodo as string) || '2026-09';
+      const er = await librosEEFFService.generarEstadoResultados(empresaId, periodo);
+      return successResponse(res, er);
+    } catch (err: any) {
+      return errorResponse(res, err.message);
+    }
+  },
+
+  async obtenerFlujoEfectivo(req: Request, res: Response) {
+    try {
+      const empresaId = req.params.id || req.empresaId!;
+      const periodo = (req.query.periodo as string) || '2026-09';
+      const fe = await librosEEFFService.generarEstadoFlujoEfectivo(empresaId, periodo);
+      return successResponse(res, fe);
+    } catch (err: any) {
+      return errorResponse(res, err.message);
+    }
+  },
+
+  async obtenerRatiosFinancieros(req: Request, res: Response) {
+    try {
+      const empresaId = req.params.id || req.empresaId!;
+      const periodo = (req.query.periodo as string) || '2026-09';
+      const ratios = await librosEEFFService.calcularRatiosFinancieros(empresaId, periodo);
+      return successResponse(res, ratios);
+    } catch (err: any) {
+      return errorResponse(res, err.message);
+    }
+  },
+
+  async reconstruirSaldos(req: Request, res: Response) {
+    try {
+      const empresaId = req.params.id || req.empresaId!;
+      const periodo = (req.body.periodo as string) || '2026-09';
+      const rec = await librosEEFFService.reconstruirSaldosMensuales(empresaId, periodo);
+      return successResponse(res, rec);
+    } catch (err: any) {
+      return errorResponse(res, err.message);
+    }
+  },
+
+  async verificarSaldos(req: Request, res: Response) {
+    try {
+      const empresaId = req.params.id || req.empresaId!;
+      const periodo = (req.query.periodo as string) || '2026-09';
+      const ver = await librosEEFFService.verificarIntegridadSaldosContraDiario(empresaId, periodo);
+      return successResponse(res, ver);
+    } catch (err: any) {
+      return errorResponse(res, err.message);
+    }
+  },
+
+  async obtenerHojaTrabajo10Columnas(req: Request, res: Response) {
+    try {
+      const empresaId = req.params.id || req.params.empresaId || req.empresaId!;
+      const periodo = (req.query.periodo as string) || '2026-09';
+      const acumulado = req.query.acumulado !== 'false';
+      const correctorasEnNegativo = req.query.correctorasEnNegativo === 'true';
+      const incluirCierre = req.query.incluirCierre !== 'false';
+
+      const hoja = await librosEEFFService.generarHojaTrabajo10Columnas(empresaId, periodo, {
+        acumuladoAlMes: acumulado,
+        correctorasActivoEnNegativo: correctorasEnNegativo,
+        incluirCierreYAjustes: incluirCierre
+      });
+      return successResponse(res, hoja);
+    } catch (err: any) {
+      return errorResponse(res, err.message);
+    }
+  },
+
+  async obtenerLibroDiarioSISCONT(req: Request, res: Response) {
+    try {
+      const empresaId = req.params.id || req.params.empresaId || req.empresaId!;
+      const periodo = (req.query.periodo as string) || '2026-09';
+      const incluirCierre = req.query.incluirCierre !== 'false';
+      const formatoFecha = (req.query.formatoFecha as any) || 'DD/MM/AAAA';
+      const voucherDesde = req.query.voucherDesde as string;
+      const voucherHasta = req.query.voucherHasta as string;
+
+      const diario = await librosEEFFService.generarLibroDiarioSISCONT(empresaId, periodo, {
+        incluirAjustesYCierre: incluirCierre,
+        formatoFecha,
+        voucherDesde,
+        voucherHasta
+      });
+      return successResponse(res, diario);
+    } catch (err: any) {
+      return errorResponse(res, err.message);
+    }
+  },
+
+  async descargarPle51Diario(req: Request, res: Response) {
+    try {
+      const empresaId = req.params.id || req.params.empresaId || req.empresaId!;
+      const periodo = (req.query.periodo as string) || '2026-09';
+      const resultado = await librosEEFFService.generarPle51DiarioTxt(empresaId, periodo);
+
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="${resultado.nombreArchivo}"`);
+      return res.send(resultado.contenidoTxt);
+    } catch (err: any) {
+      return errorResponse(res, err.message, 500);
     }
   }
 };

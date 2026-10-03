@@ -10,6 +10,10 @@ export interface DatabaseService {
     empresaId: string, 
     action: (client: PoolClient) => Promise<T>
   ): Promise<T>;
+  withEmpresaTransaction<T>(
+    empresaId: string,
+    action: (client: PoolClient) => Promise<T>
+  ): Promise<T>;
 }
 
 let pool: Pool | null = null;
@@ -46,6 +50,11 @@ if (env.DATABASE_URL) {
   }
 } else {
   console.log('ℹ️ [Database] DATABASE_URL no configurada. Operando con almacén transaccional en memoria.');
+}
+
+export function setPostgresPool(customPool: Pool | any, connected: boolean = true) {
+  pool = customPool;
+  isConnected = connected && customPool !== null;
 }
 
 export const db: DatabaseService = {
@@ -86,8 +95,35 @@ export const db: DatabaseService = {
     try {
       await client.query('BEGIN');
       // Establecer contexto para Row Level Security (RLS)
-      await client.query(`SET LOCAL app.current_user_id = $1`, [userId]);
-      await client.query(`SET LOCAL app.current_empresa_id = $2`, [empresaId]);
+      await client.query(`SELECT set_config('app.current_user_id', $1, true)`, [userId]);
+      await client.query(`SELECT set_config('app.current_empresa_id', $2, true)`, [empresaId]);
+      await client.query(`SELECT set_config('app.empresa_id', $2, true)`, [empresaId]);
+      
+      const result = await action(client);
+      await client.query('COMMIT');
+      return result;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  },
+
+  async withEmpresaTransaction<T>(
+    empresaId: string,
+    action: (client: PoolClient) => Promise<T>
+  ): Promise<T> {
+    if (!pool || !isConnected) {
+      return action({} as PoolClient);
+    }
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      // Establecer contexto para Row Level Security (RLS Fase 7.3)
+      await client.query(`SELECT set_config('app.empresa_id', $1, true)`, [empresaId]);
+      await client.query(`SELECT set_config('app.current_empresa_id', $1, true)`, [empresaId]);
       
       const result = await action(client);
       await client.query('COMMIT');

@@ -17,6 +17,7 @@ import { useVentasList, useRegistroVentasLibro, useCrearVenta, useAnularVenta, u
 import { operacionesApi } from '../../api/operacionesApi';
 import { generarSireRvieTxt, exportarComprobantesCsv } from '../../services/sireTxtGenerator';
 import { exportarRegistroVentasPdf } from '../../services/pdfExportService';
+import { useToast } from '../../context/ToastContext';
 
 interface RegistroVentasViewProps {
   ventas: Comprobante[];
@@ -29,6 +30,7 @@ export const RegistroVentasView: React.FC<RegistroVentasViewProps> = ({
   empresa,
   periodo
 }) => {
+  const { success, error } = useToast();
   const [activeTab, setActiveTab] = useState<'LIBRO' | 'DIGITACION'>('LIBRO');
   const [searchTerm, setSearchTerm] = useState('');
   const [filtroTipo, setFiltroTipo] = useState<string>('TODOS');
@@ -213,8 +215,9 @@ export const RegistroVentasView: React.FC<RegistroVentasViewProps> = ({
       setNuevoCliRuc('');
       setNuevoCliRazon('');
       setNuevoCliDireccion('');
+      success('Cliente registrado exitosamente en el catálogo de anexos.', 'Cliente Guardado');
     } catch (err: any) {
-      alert('Error registrando cliente: ' + (err?.response?.data?.message || err.message));
+      error('Error registrando cliente: ' + (err?.response?.data?.message || err.message), 'Fallo al Guardar');
     }
   };
 
@@ -225,8 +228,9 @@ export const RegistroVentasView: React.FC<RegistroVentasViewProps> = ({
       setModalAnular({ isOpen: false, id: '', serieNumero: '', motivo: '' });
       refetchVentas();
       refetchLibro();
+      success('Comprobante de venta anulado conforme a normativa SUNAT.', 'Venta Anulada');
     } catch (err: any) {
-      alert('Error anulando venta: ' + (err?.response?.data?.message || err.message));
+      error('Error anulando venta: ' + (err?.response?.data?.message || err.message), 'Fallo de Anulación');
     }
   };
 

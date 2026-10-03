@@ -33,6 +33,10 @@ export const Money = {
     return this.round(this.create(a).times(this.create(b)));
   },
 
+  times(a: number | string | Decimal, b: number | string | Decimal): Decimal {
+    return this.mul(a, b);
+  },
+
   div(a: number | string | Decimal, b: number | string | Decimal): Decimal {
     const divisor = this.create(b);
     if (divisor.isZero()) {

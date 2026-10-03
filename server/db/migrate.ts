@@ -12,7 +12,7 @@ export async function runMigrations() {
 
   console.log('🚀 [Migrations] Ejecutando migración DDL...');
   try {
-    const sqlFiles = ['schema.sql', 'schema_fase2.sql', 'triggers_fase2.sql', 'schema_fase3.sql', 'schema_fase4.sql'];
+    const sqlFiles = ['schema.sql', 'schema_fase2.sql', 'triggers_fase2.sql', 'schema_fase3.sql', 'schema_fase4.sql', 'schema_fase6.sql'];
     for (const file of sqlFiles) {
       const filePath = path.join(__dirname, file);
       if (fs.existsSync(filePath)) {

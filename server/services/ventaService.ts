@@ -69,6 +69,7 @@ export interface VentaModel {
   estado: 'BORRADOR' | 'REGISTRADO' | 'ANULADO';
   asientoId?: string | null;
   asientoNumero?: string | null;
+  asientoGenerado?: boolean;
   hashCpe?: string;
   version: number;
   advertencias?: string[];
@@ -326,6 +327,10 @@ export const ventaService = {
     return true;
   },
 
+  async registrarBorradorVenta(id: string, userId: string, empresaId: string): Promise<VentaModel> {
+    return this.registrar(empresaId, id, userId);
+  },
+
   async registrar(empresaId: string, inputOrId: VentaInput | string, userId: string): Promise<VentaModel> {
     let input: VentaInput;
     let existingId: string | null = null;
@@ -462,6 +467,7 @@ export const ventaService = {
       tieneDetraccion: !!input.tieneDetraccion,
       tienePercepcion: !!input.tienePercepcion,
       estado: 'REGISTRADO',
+      asientoGenerado: true,
       asientoId: asientoContabilizado.id,
       asientoNumero: asientoContabilizado.numero,
       hashCpe: input.hashCpe,

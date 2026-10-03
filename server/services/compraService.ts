@@ -72,6 +72,7 @@ export interface CompraModel {
   estado: 'BORRADOR' | 'REGISTRADO' | 'ANULADO';
   asientoId?: string | null;
   asientoNumero?: string | null;
+  asientoGenerado?: boolean;
   version: number;
   advertencias?: string[];
   createdAt: string;
@@ -166,6 +167,10 @@ export const compraService = {
     const id = `comp-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     const now = new Date().toISOString();
 
+    const anexo = await anexoService.obtenerPorId(empresaId, input.proveedorId);
+    const provRuc = anexo?.numeroDocumento || (input.proveedorId.startsWith('prv-') ? input.proveedorId.replace('prv-', '') : (input.proveedorId.length === 11 ? input.proveedorId : undefined));
+    const provNombre = anexo?.razonSocial || (provRuc ? `PROVEEDOR ${provRuc}` : input.proveedorId);
+
     const borrador: CompraModel = {
       id,
       empresaId,
@@ -177,6 +182,8 @@ export const compraService = {
       serie: input.serie.toUpperCase(),
       numero: input.numero,
       proveedorId: input.proveedorId,
+      proveedorNombre: provNombre,
+      proveedorRuc: provRuc,
       moneda: input.moneda || 'PEN',
       tipoCambio: input.tipoCambio || 1.0,
       baseGravada: input.baseGravada,
@@ -371,6 +378,10 @@ export const compraService = {
    * Valida período abierto, coherencia, proveedor Habido/No Habido, genera asiento contable,
    * cuenta por pagar y registro de detracción si aplica.
    */
+  async registrarBorradorCompra(id: string, userId: string, empresaId: string): Promise<CompraModel> {
+    return this.registrar(empresaId, id, userId);
+  },
+
   async registrar(empresaId: string, inputOrId: CompraInput | string, userId: string): Promise<CompraModel> {
     let input: CompraInput;
     let existingId: string | null = null;
@@ -498,8 +509,8 @@ export const compraService = {
       serie: input.serie.toUpperCase(),
       numero: input.numero,
       proveedorId: input.proveedorId,
-      proveedorNombre: anexo?.razonSocial,
-      proveedorRuc: anexo?.numeroDocumento,
+      proveedorNombre: anexo?.razonSocial || (input.proveedorId.startsWith('prv-') ? 'PROVEEDOR ' + input.proveedorId.replace('prv-', '') : input.proveedorId),
+      proveedorRuc: anexo?.numeroDocumento || (input.proveedorId.startsWith('prv-') ? input.proveedorId.replace('prv-', '') : (input.proveedorId.length === 11 ? input.proveedorId : undefined)),
       moneda,
       tipoCambio,
       baseGravada: input.baseGravada,
@@ -516,6 +527,7 @@ export const compraService = {
       tieneDetraccion: !!input.tieneDetraccion,
       tieneRetencion: !!input.tieneRetencion,
       estado: 'REGISTRADO',
+      asientoGenerado: true,
       asientoId: asientoContabilizado.id,
       asientoNumero: asientoContabilizado.numero,
       version: version + 1,

@@ -44,7 +44,15 @@ export interface AsientoFiltros {
 
 // Almacén en memoria sincronizado para alta disponibilidad
 export const ASIENTOS_MEMORIA: any[] = [];
-let correlativoCounter = 1;
+const CORRELATIVOS_MEMORIA = new Map<string, number>();
+
+function getNextCorrelativoMemoria(empresaId: string, periodoId: string, subdiarioId: string): number {
+  const key = `${empresaId}-${periodoId}-${subdiarioId}`;
+  const current = CORRELATIVOS_MEMORIA.get(key) || 0;
+  const next = current + 1;
+  CORRELATIVOS_MEMORIA.set(key, next);
+  return next;
+}
 
 export const asientoService = {
   /**
@@ -140,10 +148,12 @@ export const asientoService = {
       tipoCambio,
       estado: 'BORRADOR',
       origen: input.origen || 'MANUAL',
+      origenId: input.origenId || null,
       version,
       totalDebe: Money.toNumber(sumDebe),
       totalHaber: Money.toNumber(sumHaber),
       cuadrado: Money.isEqual(sumDebe, sumHaber),
+      creadoPor: userId,
       detalles: input.detalles,
       createdAt: now,
       updatedAt: now
@@ -236,7 +246,7 @@ export const asientoService = {
   /**
    * Contabiliza un asiento: valida estricta partida doble, asigna correlativo atómico y sella el registro.
    */
-  async contabilizar(asientoId: string, empresaId: string, userId: string) {
+  async contabilizar(asientoId: string, empresaId: string, userId: string, options?: { enforceSegregacion?: boolean }) {
     if (db.isPostgresConnected()) {
       const client = await db.getClient();
       try {
@@ -254,6 +264,10 @@ export const asientoService = {
 
         if (aRes.rows.length === 0) throw new Error('ASIENTO_NO_ENCONTRADO');
         const asiento = aRes.rows[0];
+
+        if (options?.enforceSegregacion && asiento.created_by && asiento.created_by === userId) {
+          throw new Error('SEGREGACION_FUNCIONES: El usuario que registró el borrador no puede contabilizarlo (Separación obligatoria de funciones).');
+        }
 
         if (asiento.estado === 'CONTABILIZADO') {
           throw new Error('ASIENTO_YA_CONTABILIZADO: El asiento ya se encuentra contabilizado.');
@@ -309,17 +323,41 @@ export const asientoService = {
     // Fallback memoria
     const item = ASIENTOS_MEMORIA.find(a => a.id === asientoId);
     if (!item) throw new Error('ASIENTO_NO_ENCONTRADO');
+
+    if (item.estado === 'CONTABILIZADO') {
+      throw new Error('ASIENTO_YA_CONTABILIZADO: El asiento ya se encuentra contabilizado.');
+    }
+    if (item.estado === 'EN_PROCESO_CONTABILIZACION') {
+      throw new Error('ASIENTO_YA_CONTABILIZADO: El asiento ya se encuentra en proceso de contabilización.');
+    }
+
+    if (options?.enforceSegregacion && (item as any).creadoPor && (item as any).creadoPor === userId) {
+      throw new Error('SEGREGACION_FUNCIONES: El usuario que registró el borrador no puede contabilizarlo (Separación obligatoria de funciones).');
+    }
+
     if (!item.cuadrado) {
       throw new Error(`ASIENTO_DESCUADRADO: El asiento no cuadra (Debe S/ ${item.totalDebe} != Haber S/ ${item.totalHaber})`);
     }
 
-    const numStr = `0109${String(correlativoCounter++).padStart(4, '0')}`;
-    item.estado = 'CONTABILIZADO';
-    item.numero = numStr;
-    item.version = (item.version || 1) + 1;
-    item.updatedAt = new Date().toISOString();
+    item.estado = 'EN_PROCESO_CONTABILIZACION';
+    try {
+      const pId = item.periodoId || 'per-2026-09';
+      const sId = item.subdiarioId || '01';
+      const corrNum = getNextCorrelativoMemoria(empresaId, pId, sId);
+      const subCod = (item.subdiarioCodigo || sId || '01').padStart(2, '0').slice(-2);
+      const mesStr = item.fecha ? item.fecha.substring(5, 7) : (pId.includes('-') ? pId.split('-')[1] : '09');
+      const numStr = `${subCod}${mesStr}${String(corrNum).padStart(4, '0')}`;
 
-    return item;
+      item.estado = 'CONTABILIZADO';
+      item.numero = numStr;
+      item.version = (item.version || 1) + 1;
+      item.updatedAt = new Date().toISOString();
+
+      return item;
+    } catch (e) {
+      item.estado = 'BORRADOR';
+      throw e;
+    }
   },
 
   /**

@@ -31,5 +31,20 @@ router.post('/empresas/:id/contabilizacion/previsualizar', requireEmpresaMembers
 router.get('/empresas/:id/periodos', requireEmpresaMembership(), asientoController.listarPeriodos);
 router.get('/empresas/:id/auditoria', requireEmpresaMembership(['ADMIN_ESTUDIO', 'CONTADOR', 'AUDITOR']), asientoController.listarAuditoria);
 router.get('/empresas/:id/libro-diario', requireEmpresaMembership(), asientoController.obtenerLibroDiario);
+router.get('/empresas/:id/libro-mayor', requireEmpresaMembership(), asientoController.obtenerLibroMayor);
+router.get('/empresas/:id/balance-comprobacion', requireEmpresaMembership(), asientoController.obtenerBalanceComprobacion);
+router.get('/empresas/:id/estado-situacion-financiera', requireEmpresaMembership(), asientoController.obtenerEstadoSituacionFinanciera);
+router.get('/empresas/:id/estado-resultados', requireEmpresaMembership(), asientoController.obtenerEstadoResultados);
+router.get('/empresas/:id/flujo-efectivo', requireEmpresaMembership(), asientoController.obtenerFlujoEfectivo);
+router.get('/empresas/:id/ratios-financieros', requireEmpresaMembership(), asientoController.obtenerRatiosFinancieros);
+router.post('/empresas/:id/reconstruir-saldos', requireEmpresaMembership(['ADMIN_ESTUDIO', 'CONTADOR']), asientoController.reconstruirSaldos);
+router.get('/empresas/:id/verificar-saldos', requireEmpresaMembership(), asientoController.verificarSaldos);
+
+// Reportes Oficiales Especializados (Fase 7C-2 / SISCONT)
+router.get('/empresas/:id/reportes/hoja-trabajo-10-columnas', requireEmpresaMembership(), asientoController.obtenerHojaTrabajo10Columnas);
+router.get('/empresas/:id/hoja-trabajo-10-columnas', requireEmpresaMembership(), asientoController.obtenerHojaTrabajo10Columnas);
+router.get('/empresas/:id/reportes/libro-diario-estructurado', requireEmpresaMembership(), asientoController.obtenerLibroDiarioSISCONT);
+router.get('/empresas/:id/libro-diario-siscont', requireEmpresaMembership(), asientoController.obtenerLibroDiarioSISCONT);
+router.get('/empresas/:id/reportes/ple-5-1-diario', requireEmpresaMembership(), asientoController.descargarPle51Diario);
 
 export const asientoRoutes = router;

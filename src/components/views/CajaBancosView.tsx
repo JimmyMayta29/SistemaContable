@@ -31,6 +31,7 @@ import {
   useCerrarConciliacion
 } from '../../hooks/useTesoreriaPlanilla';
 import { useCuentasPorCobrar, useCuentasPorPagar, useAnexosList } from '../../hooks/useOperaciones';
+import { useToast } from '../../context/ToastContext';
 
 interface CajaBancosViewProps {
   empresaId?: string;
@@ -45,12 +46,18 @@ export const CajaBancosView: React.FC<CajaBancosViewProps> = ({
   movimientos = [],
   onAddMovimiento
 }) => {
+  const { success, error } = useToast();
   const [activeSubTab, setActiveSubTab] = useState<'movimientos' | 'conciliacion'>('movimientos');
   const [cuentaSeleccionadaId, setCuentaSeleccionadaId] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filtroTipo, setFiltroTipo] = useState<string>('TODOS');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalExtractoOpen, setIsModalExtractoOpen] = useState(false);
+  const [modalAnular, setModalAnular] = useState<{ open: boolean; id: string; motivo: string }>({
+    open: false,
+    id: '',
+    motivo: 'Anulación de movimiento bancario por error operativo'
+  });
 
   // Queries
   const { data: cuentas = [], isLoading: loadingCuentas } = useCuentasFinancieras(empresaId);
@@ -130,18 +137,24 @@ export const CajaBancosView: React.FC<CajaBancosViewProps> = ({
       setFormOperacion('');
       setDocSeleccionadoId('');
       setMontoAplicar(0);
+      success('Movimiento de tesorería registrado y contabilizado con éxito.', 'Operación Exitosa');
     } catch (err: any) {
-      alert('Error registrando movimiento: ' + (err?.response?.data?.error || err.message));
+      error('Error registrando movimiento: ' + (err?.response?.data?.error || err.message), 'Fallo al Guardar');
     }
   };
 
-  const handleAnular = async (id: string) => {
-    const motivo = prompt('Ingrese el motivo de anulación del movimiento de tesorería:');
-    if (!motivo) return;
+  const handleSolicitarAnular = (id: string) => {
+    setModalAnular({ open: true, id, motivo: 'Anulación de movimiento bancario por error operativo' });
+  };
+
+  const handleConfirmarAnular = async () => {
+    if (!modalAnular.id || !modalAnular.motivo) return;
     try {
-      await anularMovMutation.mutateAsync({ id, motivo });
+      await anularMovMutation.mutateAsync({ id: modalAnular.id, motivo: modalAnular.motivo });
+      setModalAnular({ open: false, id: '', motivo: '' });
+      success('Movimiento de tesorería anulado conforme a auditoría.', 'Movimiento Anulado');
     } catch (err: any) {
-      alert('Error anulando movimiento: ' + (err?.response?.data?.error || err.message));
+      error('Error anulando movimiento: ' + (err?.response?.data?.error || err.message), 'Fallo al Anular');
     }
   };
 
@@ -184,9 +197,9 @@ export const CajaBancosView: React.FC<CajaBancosViewProps> = ({
       setIsModalExtractoOpen(false);
       setExtractoCsvTexto('');
       refetchConciliacion();
-      alert('Extracto bancario importado exitosamente.');
+      success('Extracto bancario importado exitosamente.', 'Extracto Bancario');
     } catch (err: any) {
-      alert('Error importando extracto: ' + (err?.response?.data?.error || err.message));
+      error('Error importando extracto: ' + (err?.response?.data?.error || err.message), 'Error');
     }
   };
 
@@ -367,7 +380,7 @@ export const CajaBancosView: React.FC<CajaBancosViewProps> = ({
                         <td className="p-3 text-center">
                           {!isAnulado && (
                             <button
-                              onClick={() => handleAnular(m.id)}
+                              onClick={() => handleSolicitarAnular(m.id)}
                               className="text-rose-600 hover:text-rose-800 font-semibold text-[11px] underline cursor-pointer"
                             >
                               Anular
@@ -711,6 +724,42 @@ export const CajaBancosView: React.FC<CajaBancosViewProps> = ({
                 className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50"
               >
                 {importarExtractoMutation.isPending ? 'Importando...' : 'Importar Extracto'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Anular Movimiento */}
+      {modalAnular.open && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-5 space-y-4 shadow-xl border border-slate-200">
+            <h3 className="text-sm font-bold text-slate-900">Anular Movimiento de Tesorería</h3>
+            <p className="text-xs text-slate-500">
+              Indique el motivo que quedará registrado en la pista de auditoría contable:
+            </p>
+            <input
+              type="text"
+              value={modalAnular.motivo}
+              onChange={(e) => setModalAnular({ ...modalAnular, motivo: e.target.value })}
+              placeholder="Ej: Cheque devuelto, error en importe..."
+              className="w-full text-xs border border-slate-300 rounded-xl p-2.5 text-slate-800 focus:outline-none focus:border-blue-500"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setModalAnular({ open: false, id: '', motivo: '' })}
+                className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-xl transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmarAnular}
+                disabled={anularMovMutation.isPending}
+                className="px-3.5 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition cursor-pointer"
+              >
+                {anularMovMutation.isPending ? 'Anulando...' : 'Confirmar Anulación'}
               </button>
             </div>
           </div>

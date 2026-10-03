@@ -14,8 +14,10 @@ import {
 import { PLAN_CONTABLE_PCGE } from '../../data/pcgeAccounts';
 import { TIPOS_CAMBIO_SBS_DEMO, CATALOGO_ENTIDADES_DEMO } from '../../data/maestrosSiscont';
 import { SUBDIARIOS_SISCONT, TipoCambioSbs, EntidadCatalogo } from '../../types';
+import { useToast } from '../../context/ToastContext';
 
 export const MaestrosSiscontView: React.FC = () => {
+  const { success } = useToast();
   const [tab, setTab] = useState<'PCGE' | 'TIPO_CAMBIO' | 'ENTIDADES' | 'SUBDIARIOS'>('PCGE');
   
   // Search states
@@ -38,7 +40,7 @@ export const MaestrosSiscontView: React.FC = () => {
     setActualizandoTc(true);
     setTimeout(() => {
       setActualizandoTc(false);
-      alert('Tipos de Cambio SBS actualizados con el Web Service oficial de la Superintendencia de Banca y Seguros.');
+      success('Tipos de Cambio SBS actualizados con el Web Service oficial de la Superintendencia de Banca y Seguros.', 'SBS Sincronizado');
     }, 600);
   };
 

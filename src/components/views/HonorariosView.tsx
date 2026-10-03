@@ -20,6 +20,7 @@ import {
   useAnularHonorario 
 } from '../../hooks/useTesoreriaPlanilla';
 import { useAnexosList } from '../../hooks/useOperaciones';
+import { useToast } from '../../context/ToastContext';
 
 interface HonorariosViewProps {
   honorarios?: ReciboHonorario[];
@@ -36,8 +37,14 @@ export const HonorariosView: React.FC<HonorariosViewProps> = ({
   onAddHonorario,
   onGenerarAsientoHonorario
 }) => {
+  const { success, error } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalAnular, setModalAnular] = useState<{ open: boolean; id: string; motivo: string }>({
+    open: false,
+    id: '',
+    motivo: 'Anulación de recibo por honorarios por error material'
+  });
 
   // Queries
   const { data: apiHonorarios = [], isLoading } = useHonorarios(empresa.id);
@@ -139,18 +146,24 @@ export const HonorariosView: React.FC<HonorariosViewProps> = ({
       setGlosa('');
       setSuspensionCuarta(false);
       setNumResolucion('');
+      success('Recibo por honorarios registrado y contabilizado.', 'Recibo Guardado');
     } catch (err: any) {
-      alert('Error registrando recibo: ' + (err?.response?.data?.error || err.message));
+      error('Error registrando recibo: ' + (err?.response?.data?.error || err.message), 'Fallo al Guardar');
     }
   };
 
-  const handleAnular = async (id: string) => {
-    const motivo = prompt('Ingrese el motivo de anulación del recibo por honorarios:');
-    if (!motivo) return;
+  const handleSolicitarAnular = (id: string) => {
+    setModalAnular({ open: true, id, motivo: 'Anulación de recibo por honorarios por error material' });
+  };
+
+  const handleConfirmarAnular = async () => {
+    if (!modalAnular.id || !modalAnular.motivo) return;
     try {
-      await anularMutation.mutateAsync({ id, motivo });
+      await anularMutation.mutateAsync({ id: modalAnular.id, motivo: modalAnular.motivo });
+      setModalAnular({ open: false, id: '', motivo: '' });
+      success('Recibo por honorarios anulado exitosamente.', 'Recibo Anulado');
     } catch (err: any) {
-      alert('Error anulando recibo: ' + (err?.response?.data?.error || err.message));
+      error('Error anulando recibo: ' + (err?.response?.data?.error || err.message), 'Fallo al Anular');
     }
   };
 
@@ -292,7 +305,7 @@ export const HonorariosView: React.FC<HonorariosViewProps> = ({
                       <td className="p-3 text-center">
                         {!isAnulado && (
                           <button
-                            onClick={() => handleAnular(h.id)}
+                            onClick={() => handleSolicitarAnular(h.id)}
                             className="text-rose-600 hover:text-rose-800 font-semibold text-[11px] underline cursor-pointer"
                           >
                             Anular
@@ -466,6 +479,42 @@ export const HonorariosView: React.FC<HonorariosViewProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Anular Honorario */}
+      {modalAnular.open && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-5 space-y-4 shadow-xl border border-slate-200">
+            <h3 className="text-sm font-bold text-slate-900">Anular Recibo por Honorarios</h3>
+            <p className="text-xs text-slate-500">
+              Indique el motivo que quedará registrado en la pista de auditoría contable:
+            </p>
+            <input
+              type="text"
+              value={modalAnular.motivo}
+              onChange={(e) => setModalAnular({ ...modalAnular, motivo: e.target.value })}
+              placeholder="Ej: Recibo emitido con error en RUC o monto..."
+              className="w-full text-xs border border-slate-300 rounded-xl p-2.5 text-slate-800 focus:outline-none focus:border-blue-500"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setModalAnular({ open: false, id: '', motivo: '' })}
+                className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-xl transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmarAnular}
+                disabled={anularMutation.isPending}
+                className="px-3.5 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition cursor-pointer"
+              >
+                {anularMutation.isPending ? 'Anulando...' : 'Confirmar Anulación'}
+              </button>
+            </div>
           </div>
         </div>
       )}
