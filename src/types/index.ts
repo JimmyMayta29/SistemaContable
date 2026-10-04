@@ -158,6 +158,9 @@ export interface AsientoContable {
   totalHaber: number;
   cuadrado: boolean;
   origenAutomatico: boolean;
+  estado?: 'CONTABILIZADO' | 'BORRADOR' | 'ANULADO' | string;
+  cuo?: string;
+  empresaId?: string;
 }
 
 export interface EmpresaCliente {

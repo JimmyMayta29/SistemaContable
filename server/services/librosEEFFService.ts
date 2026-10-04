@@ -386,7 +386,7 @@ export const librosEEFFService = {
 
     // Memoria
     return ASIENTOS_MEMORIA.filter(a => {
-      const coincideEmpresa = !a.empresaId || a.empresaId === empresaId || a.empresaId === 'emp-01';
+      const coincideEmpresa = a.empresaId === empresaId;
       const coincideEstado = a.estado === 'CONTABILIZADO';
       const sub = (a.subdiario || a.subdiarioId || '01').padStart(2, '0');
       if (!incluirCierreYAjustes && (sub === '00' || sub === '09')) {
@@ -1172,7 +1172,7 @@ export const librosEEFFService = {
     const cuentasMap = new Map<string, { debe: number; haber: number }>();
     for (const a of asientos) {
       for (const it of a.items) {
-        const cta = (it.codigoCuenta || '').trim();
+        const cta = (it.codigoCuenta || it.cuentaCodigo || it.cuentaId || '').trim();
         if (!cta) continue;
         const cur = cuentasMap.get(cta) || { debe: 0, haber: 0 };
         cur.debe = Money.toNumber(Money.add(cur.debe, it.debe || 0));

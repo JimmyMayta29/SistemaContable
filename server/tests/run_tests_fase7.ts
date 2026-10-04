@@ -1,4 +1,4 @@
-import { authJwtService } from '../services/authJwtService';
+import { authJwtService, sembrarUsuariosPrueba } from '../services/authJwtService';
 import { totpService } from '../services/totpService';
 import { cryptoService } from '../services/cryptoService';
 import { auditoriaChainService, AUDITORIA_LOG_CHAIN_MEMORIA } from '../services/auditoriaChainService';
@@ -8,6 +8,7 @@ import { periodoService } from '../services/periodoService';
 import { db } from '../config/database';
 
 async function ejecutarSuiteFase7() {
+  sembrarUsuariosPrueba();
   console.log('======================================================');
   console.log('🧪 SUITE DE PRUEBAS AUTOMATIZADAS — FASE 7: SEGURIDAD, RBAC, RLS, ENVELOPE ENCRYPTION & AUDITORÍA');
   console.log('======================================================\n');

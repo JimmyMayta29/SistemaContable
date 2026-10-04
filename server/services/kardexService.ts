@@ -46,6 +46,8 @@ export interface MovimientoKardexModel {
 }
 
 export const PRODUCTOS_KARDEX_MEMORIA: ProductoKardexModel[] = [];
+export const ARTICULOS_MEMORIA = PRODUCTOS_KARDEX_MEMORIA;
+export type ArticuloKardexModel = ProductoKardexModel;
 export const MOVIMIENTOS_KARDEX_MEMORIA: MovimientoKardexModel[] = [];
 
 export const kardexService = {

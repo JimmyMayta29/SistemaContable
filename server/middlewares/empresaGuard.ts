@@ -19,14 +19,18 @@ export function empresaGuard(options: EmpresaGuardOptions = {}) {
   const bloquearPeriodoCerrado = options.bloquearPeriodoCerrado !== false;
 
   return async (req: Request, res: Response, next: NextFunction) => {
-    // 1. Extraer empresaId de la URL, headers o body
-    const empresaId = req.params.empresaId || req.params.id || (req.headers['x-empresa-id'] as string) || (req.query.empresaId as string) || req.body?.empresaId;
+    // 1. Extraer empresaId de la URL verificada (/e/:empresaId/* o :id) o de req.empresaId del JWT autenticado.
+    // Nunca lee headers x-empresa-id, query ni body.
+    const empresaId = req.params.empresaId || req.params.id || req.empresaId;
 
     if (!empresaId) {
       return errorResponse(res, 'EMPRESA_REQUERIDA: Debe especificar un identificador de empresa válido.', 400);
     }
 
-    const userId = req.user?.id || 'usr-admin-01';
+    const userId = req.user?.id;
+    if (!userId) {
+      return errorResponse(res, 'Acceso denegado: Autenticación requerida.', 401);
+    }
     let rolEnEmpresa: RolEstudio | string | null = null;
 
     // 2. Verificar membresía en memoria

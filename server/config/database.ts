@@ -42,14 +42,26 @@ if (env.DATABASE_URL) {
       .catch((err) => {
         console.warn('⚠️ [Database] No se pudo conectar a PostgreSQL vía DATABASE_URL:', err.message);
         isConnected = false;
+        if (env.NODE_ENV === 'production') {
+          console.error('❌ [Database] FATAL: Error conectando a PostgreSQL en producción. Abortando.');
+          process.exit(1);
+        }
       });
   } catch (err: any) {
     console.warn('⚠️ [Database] Error inicializando Pool de PostgreSQL:', err.message);
     pool = null;
     isConnected = false;
+    if (env.NODE_ENV === 'production') {
+      console.error('❌ [Database] FATAL: Excepción inicializando Pool PostgreSQL en producción. Abortando.');
+      process.exit(1);
+    }
   }
 } else {
-  console.log('ℹ️ [Database] DATABASE_URL no configurada. Operando con almacén transaccional en memoria.');
+  if (env.NODE_ENV === 'production') {
+    console.error('❌ [Database] FATAL: NODE_ENV=production requiere DATABASE_URL configurada. El servidor no arrancará con motor en memoria.');
+    process.exit(1);
+  }
+  console.log('⚠️ [Database] ADVERTENCIA: DATABASE_URL no configurada. Operando en modo DESARROLLO/TEST con almacén transaccional en memoria.');
 }
 
 export function setPostgresPool(customPool: Pool | any, connected: boolean = true) {

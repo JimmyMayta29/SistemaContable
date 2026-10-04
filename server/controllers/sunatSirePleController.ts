@@ -5,6 +5,7 @@ import { conciliadorSireService } from '../services/conciliadorSireService';
 import { xmlImportService } from '../services/xmlImportService';
 import { pleExportService } from '../services/pleExportService';
 import { sunatJobsService } from '../services/sunatJobsService';
+import { empresaDemoService } from '../services/empresaDemoService';
 import { successResponse, errorResponse } from '../utils/response';
 
 // ============================================================================
@@ -80,6 +81,7 @@ export const sunatSirePleController = {
   async guardarConexion(req: Request, res: Response) {
     try {
       const empresaId = req.params.id;
+      empresaDemoService.validarOperacionOficialPermitida(empresaId, 'SOL_CONEXION');
       const data = conexionSunatSchema.parse(req.body);
       const userId = (req as any).user?.id || '00000000-0000-0000-0000-000000000001';
       const result = await sireService.guardarConexion(empresaId, data, userId);
@@ -102,6 +104,7 @@ export const sunatSirePleController = {
   async validarConexion(req: Request, res: Response) {
     try {
       const empresaId = req.params.id;
+      empresaDemoService.validarOperacionOficialPermitida(empresaId, 'SOL_CONEXION');
       const userId = (req as any).user?.id || '00000000-0000-0000-0000-000000000001';
       const resultado = await sireService.validarConexion(empresaId, userId);
       return successResponse(res, resultado);
@@ -114,6 +117,7 @@ export const sunatSirePleController = {
   async descargarPropuesta(req: Request, res: Response) {
     try {
       const empresaId = req.params.id;
+      empresaDemoService.validarOperacionOficialPermitida(empresaId, 'SIRE_ENVIO');
       const data = descargarSireSchema.parse(req.body);
       const tipoTrabajo = data.tipo === 'COMPRAS' ? 'DESCARGA_SIRE_COMPRAS' : 'DESCARGA_SIRE_VENTAS';
       const job = sunatJobsService.crearJob(empresaId, tipoTrabajo, { periodo: data.periodo });
@@ -210,6 +214,7 @@ export const sunatSirePleController = {
   async exportarPle(req: Request, res: Response) {
     try {
       const empresaId = req.params.id;
+      empresaDemoService.validarOperacionOficialPermitida(empresaId, 'PLE_ENVIO');
       const data = exportarPleSchema.parse(req.body);
       const userId = (req as any).user?.id || '00000000-0000-0000-0000-000000000001';
 
@@ -271,6 +276,7 @@ export const sunatSirePleController = {
   async aceptarPropuestaOficial(req: Request, res: Response) {
     try {
       const empresaId = req.params.id;
+      empresaDemoService.validarOperacionOficialPermitida(empresaId, 'SIRE_ENVIO');
       const data = aceptarPropuestaOficialSchema.parse(req.body);
       const userId = (req as any).user?.id || '00000000-0000-0000-0000-000000000001';
       const resultado = await conciliadorSireService.aceptarPropuestaSireOficial(empresaId, data.tipo, data.periodo, userId);
@@ -283,6 +289,7 @@ export const sunatSirePleController = {
   async reemplazarPropuestaOficial(req: Request, res: Response) {
     try {
       const empresaId = req.params.id;
+      empresaDemoService.validarOperacionOficialPermitida(empresaId, 'SIRE_ENVIO');
       const data = reemplazarPropuestaOficialSchema.parse(req.body);
       const userId = (req as any).user?.id || '00000000-0000-0000-0000-000000000001';
       const resultado = await conciliadorSireService.reemplazarPropuestaSireOficial(

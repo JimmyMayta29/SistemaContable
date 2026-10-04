@@ -33,8 +33,16 @@ export const Money = {
     return this.round(this.create(a).times(this.create(b)));
   },
 
+  multiply(a: number | string | Decimal, b: number | string | Decimal): Decimal {
+    return this.mul(a, b);
+  },
+
   times(a: number | string | Decimal, b: number | string | Decimal): Decimal {
     return this.mul(a, b);
+  },
+
+  subtract(a: number | string | Decimal, b: number | string | Decimal): Decimal {
+    return this.sub(a, b);
   },
 
   div(a: number | string | Decimal, b: number | string | Decimal): Decimal {

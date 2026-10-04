@@ -86,8 +86,11 @@ export const saldosService = {
     }
 
     let filtrados = CXP_MEMORIA.filter(p => p.empresaId === empresaId);
-    if (filtros?.estado) filtrados = filtrados.filter(p => p.estado === filtros.estado);
-    else filtrados = filtrados.filter(p => p.saldo > 0);
+    if (filtros?.estado && filtros.estado !== 'TODOS') {
+      filtrados = filtrados.filter(p => p.estado === filtros.estado);
+    } else if (!filtros?.estado) {
+      filtrados = filtrados.filter(p => p.saldo > 0);
+    }
     if (filtros?.anexoId) filtrados = filtrados.filter(p => p.proveedorId === filtros.anexoId);
     if (filtros?.search) {
       const q = filtros.search.toLowerCase();
@@ -154,8 +157,11 @@ export const saldosService = {
     }
 
     let filtrados = CXC_MEMORIA.filter(c => c.empresaId === empresaId);
-    if (filtros?.estado) filtrados = filtrados.filter(c => c.estado === filtros.estado);
-    else filtrados = filtrados.filter(c => c.saldo > 0);
+    if (filtros?.estado && filtros.estado !== 'TODOS') {
+      filtrados = filtrados.filter(c => c.estado === filtros.estado);
+    } else if (!filtros?.estado) {
+      filtrados = filtrados.filter(c => c.saldo > 0);
+    }
     if (filtros?.anexoId) filtrados = filtrados.filter(c => c.clienteId === filtros.anexoId);
     if (filtros?.search) {
       const q = filtros.search.toLowerCase();

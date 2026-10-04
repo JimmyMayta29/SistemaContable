@@ -505,7 +505,7 @@ export function calcularLibroDiarioSISCONT(
     if (a.estado && a.estado !== 'CONTABILIZADO') return false;
 
     const sub = (a.subdiario || (a as any).subdiarioId || '01').padStart(2, '0');
-    if (!incluirCierreYAjustes && (sub === '00' || sub === '09')) return false;
+    if (!incluirAjustesYCierre && (sub === '00' || sub === '09')) return false;
 
     const per = a.periodo || (a.fecha ? a.fecha.substring(0, 7) : '');
     const coincidePeriodo = per === periodo || (a.fecha && a.fecha.startsWith(periodo));
@@ -905,7 +905,7 @@ export function exportarHojaTrabajoPdf(
   ];
 
   autoTable(doc, {
-    head: headers,
+    head: headers as any,
     body: rows,
     foot: foot as any,
     startY: 38,
@@ -1094,7 +1094,7 @@ export function exportarLibroDiarioSISCONTPdf(
   ];
 
   autoTable(doc, {
-    head: headers,
+    head: headers as any,
     body: rows,
     foot: foot as any,
     startY: 38,

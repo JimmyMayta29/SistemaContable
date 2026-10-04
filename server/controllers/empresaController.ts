@@ -3,11 +3,16 @@ import { z } from 'zod';
 import { empresaRepository } from '../repositories/empresaRepository';
 import { parametroRepository } from '../repositories/parametroRepository';
 import { auditoriaRepository } from '../repositories/auditoriaRepository';
+import { empresaDemoService } from '../services/empresaDemoService';
+import { setupService } from '../services/setupService';
 import { successResponse, errorResponse } from '../utils/response';
 
 export const crearEmpresaSchema = z.object({
   codigoEmpresa: z.string().min(2).max(20),
-  ruc: z.string().length(11, 'El RUC debe tener exactamente 11 dígitos'),
+  ruc: z.string().length(11, 'El RUC debe tener exactamente 11 dígitos').refine(
+    (ruc) => setupService.validarRucModulo11(ruc),
+    { message: 'El RUC no cumple con el algoritmo Módulo 11 oficial de SUNAT.' }
+  ),
   razonSocial: z.string().min(3).max(200),
   nombreComercial: z.string().max(200).optional(),
   regimenTributario: z.enum(['MYPE_TRIBUTARIO', 'REGIMEN_GENERAL', 'REGIMEN_ESPECIAL', 'NRUS']),
@@ -18,6 +23,10 @@ export const crearEmpresaSchema = z.object({
   contactoNombre: z.string().optional(),
   contactoTelefono: z.string().optional(),
   contactoEmail: z.string().email('Email de contacto no válido').optional().or(z.literal('')),
+  representanteLegal: z.string().min(3).optional(),
+  contadorNombre: z.string().min(3).optional(),
+  contadorColegiatura: z.string().min(3).optional(),
+  ejercicio: z.number().int().min(2020).max(2035).default(2026),
   monedaPrincipal: z.enum(['PEN', 'USD']).default('PEN')
 });
 
@@ -125,6 +134,9 @@ export const empresaController = {
       const { id } = req.params;
       const { usuarioSol, claveSol, clientIdSire, clientSecretSire } = req.body;
 
+      // 2.3 Bloquear conexión SOL en la Empresa Demo
+      empresaDemoService.validarOperacionOficialPermitida(id, 'SOL_CONEXION');
+
       await empresaRepository.actualizarCredencialesSunat(
         id, 
         usuarioSol, 
@@ -146,7 +158,19 @@ export const empresaController = {
 
       return successResponse(res, { message: 'Credenciales SUNAT guardadas de forma segura (AES-256-GCM)' });
     } catch (error: any) {
-      return errorResponse(res, 'Error al guardar credenciales SUNAT');
+      return errorResponse(res, error.message || 'Error al guardar credenciales SUNAT');
+    }
+  },
+
+  async restablecerDemo(req: Request, res: Response) {
+    try {
+      if (req.user?.rolGlobal !== 'ADMIN_ESTUDIO') {
+        return errorResponse(res, 'Solo el rol ADMIN_ESTUDIO tiene autorización para restablecer la Empresa Demo.', 403);
+      }
+      const resultado = await empresaDemoService.restablecerDemo(req.user.id);
+      return successResponse(res, resultado, 'Empresa Demo S.A.C. restablecida con éxito.');
+    } catch (error: any) {
+      return errorResponse(res, error.message || 'Error al restablecer la empresa demo');
     }
   }
 };

@@ -29,29 +29,19 @@ declare global {
 }
 
 /**
- * Middleware para requerir autenticación JWT firmada (Fase 7)
+ * Middleware para requerir autenticación JWT firmada (Fase 7 y Fase 13)
  * Extrae userId, rol y empresaId resueltos exclusivamente por el servidor.
+ * Retorna 401 si no hay token o es inválido. Nunca lee x-empresa-id ni aplica fallbacks arbitrarios.
  */
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    // Si no se envía token en peticiones de desarrollo local/tests, proveer usuario administrador predeterminado
-    req.user = {
-      id: 'usr-admin-01',
-      email: 'admin@sunaconta.pe',
-      nombre: 'Administrador General',
-      rolGlobal: 'ADMIN_ESTUDIO',
-      mfaVerificado: true,
-      empresasPermitidas: ['emp-01', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002']
-    };
-    req.empresaId = (req.headers['x-empresa-id'] as string) || 'emp-01';
-    req.userRolEnEmpresa = 'ADMIN_ESTUDIO';
-    return next();
+    return errorResponse(res, 'Acceso denegado: Token de autenticación requerido', 401);
   }
 
   const token = authHeader.split(' ')[1];
   try {
-    // 1. Intentar validar mediante el servicio JWT firmado de la Fase 7
+    // 1. Validar mediante el servicio JWT firmado
     const claims = authJwtService.verificarAccessToken(token);
 
     req.user = {
@@ -65,19 +55,8 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 
     // 2. Resolución estricta de empresa_id:
     // Se toma exclusivamente del token firmado por el servidor.
-    // Solo se permite sobrescribir si el cliente solicita explícitamente una empresa
-    // a la que el usuario tiene acceso verificado en usuario_empresa.
-    const empresaSolicitada = (req.headers['x-empresa-id'] as string) || req.params.empresaId || req.params.id || req.body?.empresaId;
-    if (empresaSolicitada && empresaSolicitada !== claims.empresaId) {
-      if (claims.empresasPermitidas && claims.empresasPermitidas.includes(empresaSolicitada)) {
-        req.empresaId = empresaSolicitada;
-      } else {
-        return errorResponse(res, `Acceso denegado: El usuario no tiene permisos asignados para la empresa '${empresaSolicitada}'`, 403);
-      }
-    } else {
-      req.empresaId = claims.empresaId;
-    }
-
+    // Se ignora cualquier header x-empresa-id o parámetro externo.
+    req.empresaId = claims.empresaId;
     req.userRolEnEmpresa = claims.rolEnEmpresa || claims.rolGlobal;
     next();
   } catch (err: any) {
@@ -90,7 +69,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
         nombre: decoded.nombres || 'Usuario Legacy',
         rolGlobal: decoded.rolGlobal || 'ADMIN_ESTUDIO'
       };
-      req.empresaId = (req.headers['x-empresa-id'] as string) || decoded.empresaId || 'emp-01';
+      req.empresaId = decoded.empresaId;
       req.userRolEnEmpresa = (req.user.rolGlobal as RolEstudio) || 'ADMIN_ESTUDIO';
       next();
     } catch {
@@ -101,19 +80,20 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 
 /**
  * Middleware para validar que el usuario tenga membresía activa en la empresa indicada
- * y verificar los roles permitidos (RBAC).
+ * y verificar los roles permitidos (RBAC). Resuelve empresaId exclusivamente desde el token.
  */
 export function requireEmpresaMembership(
   rolesPermitidos: Array<RolEstudio | string> = ['ADMIN_ESTUDIO', 'CONTADOR_SENIOR', 'ASISTENTE_CONTABLE', 'AUDITOR_REVISOR', 'CONTADOR', 'ASISTENTE', 'AUDITOR']
 ) {
   return async (req: Request, res: Response, next: NextFunction) => {
-    const userId = req.user?.id || 'usr-admin-01';
-    let empresaId = req.empresaId;
+    const userId = req.user?.id;
+    if (!userId) {
+      return errorResponse(res, 'Acceso denegado: Autenticación requerida', 401);
+    }
 
+    const empresaId = req.empresaId;
     if (!empresaId) {
-      const solicitada = (req.headers['x-empresa-id'] as string) || req.params.empresaId || req.params.id || req.body?.empresaId;
-      empresaId = solicitada || 'emp-01';
-      req.empresaId = empresaId;
+      return errorResponse(res, 'Acceso denegado: Empresa no especificada en el contexto autenticado', 400);
     }
 
     // Validación contra el almacén en memoria
@@ -126,8 +106,7 @@ export function requireEmpresaMembership(
     } else if (req.user?.rolGlobal === 'ADMIN_ESTUDIO') {
       req.userRolEnEmpresa = 'ADMIN_ESTUDIO';
     } else if (!db.isPostgresConnected()) {
-      // Si estamos en pruebas con almacén en memoria y no hay membresía explícita
-      if (empresaId && req.user?.empresasPermitidas && !req.user.empresasPermitidas.includes(empresaId)) {
+      if (req.user?.empresasPermitidas && !req.user.empresasPermitidas.includes(empresaId)) {
         return errorResponse(res, `Acceso denegado: No tiene membresía activa en la empresa '${empresaId}'`, 403);
       }
       req.userRolEnEmpresa = (req.user?.rolGlobal as RolEstudio) || 'CONTADOR_SENIOR';

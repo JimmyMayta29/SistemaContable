@@ -184,7 +184,7 @@ export const operacionesController = {
   async obtenerCompra(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const empresaId = req.headers['x-empresa-id'] as string || req.empresaId!;
+      const empresaId = req.empresaId!;
       const compra = await compraService.obtenerPorId(empresaId, id);
       if (!compra) return errorResponse(res, 'Comprobante de compra no encontrado', 404);
       return successResponse(res, compra);
@@ -196,7 +196,7 @@ export const operacionesController = {
   async actualizarCompra(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const empresaId = req.headers['x-empresa-id'] as string || req.empresaId!;
+      const empresaId = req.empresaId!;
       const userId = req.user?.id || '00000000-0000-0000-0000-000000000001';
       const expectedVersion = req.body.version ?? 1;
 
@@ -210,7 +210,7 @@ export const operacionesController = {
   async eliminarCompra(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const empresaId = req.headers['x-empresa-id'] as string || req.empresaId!;
+      const empresaId = req.empresaId!;
       const userId = req.user?.id || '00000000-0000-0000-0000-000000000001';
       await compraService.eliminarBorrador(empresaId, id, userId);
       return successResponse(res, { id }, 'Borrador de compra eliminado');
@@ -222,7 +222,7 @@ export const operacionesController = {
   async registrarBorradorCompra(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const empresaId = req.headers['x-empresa-id'] as string || req.empresaId!;
+      const empresaId = req.empresaId!;
       const userId = req.user?.id || '00000000-0000-0000-0000-000000000001';
       const registrado = await compraService.registrar(empresaId, id, userId);
       return successResponse(res, registrado, 'Borrador registrado y contabilizado');
@@ -234,7 +234,7 @@ export const operacionesController = {
   async anularCompra(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const empresaId = req.headers['x-empresa-id'] as string || req.empresaId!;
+      const empresaId = req.empresaId!;
       const userId = req.user?.id || '00000000-0000-0000-0000-000000000001';
       const motivo = req.body.motivo || 'Anulación de comprobante';
       const anulado = await compraService.anular(empresaId, id, motivo, userId);
@@ -247,7 +247,7 @@ export const operacionesController = {
   async duplicarCompra(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const empresaId = req.headers['x-empresa-id'] as string || req.empresaId!;
+      const empresaId = req.empresaId!;
       const userId = req.user?.id || '00000000-0000-0000-0000-000000000001';
       const duplicado = await compraService.duplicar(empresaId, id, userId);
       return successResponse(res, duplicado, 'Comprobante duplicado como borrador');
@@ -327,7 +327,7 @@ export const operacionesController = {
   async obtenerVenta(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const empresaId = req.headers['x-empresa-id'] as string || req.empresaId!;
+      const empresaId = req.empresaId!;
       const venta = await ventaService.obtenerPorId(empresaId, id);
       if (!venta) return errorResponse(res, 'Comprobante de venta no encontrado', 404);
       return successResponse(res, venta);
@@ -339,7 +339,7 @@ export const operacionesController = {
   async actualizarVenta(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const empresaId = req.headers['x-empresa-id'] as string || req.empresaId!;
+      const empresaId = req.empresaId!;
       const userId = req.user?.id || '00000000-0000-0000-0000-000000000001';
       const expectedVersion = req.body.version ?? 1;
 
@@ -353,7 +353,7 @@ export const operacionesController = {
   async eliminarVenta(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const empresaId = req.headers['x-empresa-id'] as string || req.empresaId!;
+      const empresaId = req.empresaId!;
       const userId = req.user?.id || '00000000-0000-0000-0000-000000000001';
       await ventaService.eliminarBorrador(empresaId, id, userId);
       return successResponse(res, { id }, 'Borrador de venta eliminado');
@@ -365,7 +365,7 @@ export const operacionesController = {
   async registrarBorradorVenta(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const empresaId = req.headers['x-empresa-id'] as string || req.empresaId!;
+      const empresaId = req.empresaId!;
       const userId = req.user?.id || '00000000-0000-0000-0000-000000000001';
       const registrado = await ventaService.registrar(empresaId, id, userId);
       return successResponse(res, registrado, 'Borrador de venta registrado y contabilizado');
@@ -377,7 +377,7 @@ export const operacionesController = {
   async anularVenta(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const empresaId = req.headers['x-empresa-id'] as string || req.empresaId!;
+      const empresaId = req.empresaId!;
       const userId = req.user?.id || '00000000-0000-0000-0000-000000000001';
       const motivo = req.body.motivo || 'Anulación de comprobante de venta';
       const anulado = await ventaService.anular(empresaId, id, motivo, userId);
@@ -390,7 +390,7 @@ export const operacionesController = {
   async duplicarVenta(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const empresaId = req.headers['x-empresa-id'] as string || req.empresaId!;
+      const empresaId = req.empresaId!;
       const userId = req.user?.id || '00000000-0000-0000-0000-000000000001';
       const duplicado = await ventaService.duplicar(empresaId, id, userId);
       return successResponse(res, duplicado, 'Comprobante de venta duplicado como borrador');
@@ -466,7 +466,7 @@ export const operacionesController = {
   async aplicarNota(req: Request, res: Response) {
     try {
       const { id } = req.params; // Documento original ID
-      const empresaId = req.headers['x-empresa-id'] as string || req.empresaId!;
+      const empresaId = req.empresaId!;
       const userId = req.user?.id || '00000000-0000-0000-0000-000000000001';
       const resultado = await notaCreditoDebitoService.aplicarNota(empresaId, id, req.body, userId);
       return successResponse(res, resultado, 'Nota de crédito/débito aplicada exitosamente');
@@ -478,7 +478,7 @@ export const operacionesController = {
   async anularNota(req: Request, res: Response) {
     try {
       const { id } = req.params; // Nota ID
-      const empresaId = req.headers['x-empresa-id'] as string || req.empresaId!;
+      const empresaId = req.empresaId!;
       const userId = req.user?.id || '00000000-0000-0000-0000-000000000001';
       const motivo = req.body.motivo || 'Anulación de nota';
       const resultado = await notaCreditoDebitoService.anularNota(empresaId, id, motivo, userId);
@@ -606,7 +606,7 @@ export const operacionesController = {
   async registrarDepositoDetraccion(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const empresaId = req.headers['x-empresa-id'] as string || req.empresaId!;
+      const empresaId = req.empresaId!;
       const userId = req.user?.id || '00000000-0000-0000-0000-000000000001';
       const { numeroConstancia, fechaDeposito } = req.body;
       const resDet = await detraccionService.registrarDeposito(id, numeroConstancia, fechaDeposito, userId, empresaId);

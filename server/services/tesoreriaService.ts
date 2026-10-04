@@ -127,10 +127,6 @@ export const tesoreriaService = {
       if (res.rows && res.rows.length > 0) return res.rows;
     }
     const cuentas = CUENTAS_FINANCIERAS_MEMORIA.filter(c => c.empresaId === empresaId);
-    if (cuentas.length === 0 && (empresaId === 'emp-01' || empresaId.startsWith('emp-'))) {
-      const baseCuentas = CUENTAS_FINANCIERAS_MEMORIA.filter(c => c.empresaId === '00000000-0000-0000-0000-000000000001');
-      return baseCuentas.map(c => ({ ...c, id: `${c.id}-${empresaId}`, empresaId }));
-    }
     return cuentas || [];
   },
 

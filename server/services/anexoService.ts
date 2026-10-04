@@ -14,7 +14,7 @@ export interface AnexoModel {
   createdAt: string;
 }
 
-const ANEXOS_MEMORIA: AnexoModel[] = [
+export const ANEXOS_MEMORIA: AnexoModel[] = [
   {
     id: 'anx-01',
     empresaId: 'emp-01',

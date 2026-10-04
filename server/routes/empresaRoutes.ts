@@ -8,6 +8,7 @@ const router = Router();
 router.use(requireAuth);
 
 router.get('/', empresaController.listar);
+router.post('/demo/restablecer', requireAuth, empresaController.restablecerDemo);
 router.get('/:id', requireEmpresaMembership(), empresaController.obtener);
 router.get('/:id/verificar-acceso', requireEmpresaMembership(), (req, res) => {
   res.json({

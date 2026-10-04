@@ -129,7 +129,7 @@ export const asientoController = {
   async contabilizar(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const empresaId = req.headers['x-empresa-id'] as string || req.empresaId!;
+      const empresaId = req.empresaId!;
       const userId = req.user?.id || '00000000-0000-0000-0000-000000000001';
 
       const contabilizado = await asientoService.contabilizar(id, empresaId, userId);
@@ -142,7 +142,7 @@ export const asientoController = {
   async anular(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const empresaId = req.headers['x-empresa-id'] as string || req.empresaId!;
+      const empresaId = req.empresaId!;
       const userId = req.user?.id || '00000000-0000-0000-0000-000000000001';
       const { motivo } = req.body;
 
@@ -156,7 +156,7 @@ export const asientoController = {
   async duplicar(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const empresaId = req.headers['x-empresa-id'] as string || req.empresaId!;
+      const empresaId = req.empresaId!;
       const userId = req.user?.id || '00000000-0000-0000-0000-000000000001';
 
       const copia = await asientoService.duplicar(id, userId, empresaId);
@@ -197,7 +197,7 @@ export const asientoController = {
   async cerrarPeriodo(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const empresaId = req.headers['x-empresa-id'] as string || req.empresaId!;
+      const empresaId = req.empresaId!;
       const userId = req.user?.id || '00000000-0000-0000-0000-000000000001';
 
       const cerrado = await periodoService.cerrar(id, userId, empresaId);
@@ -210,7 +210,7 @@ export const asientoController = {
   async reabrirPeriodo(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const empresaId = req.headers['x-empresa-id'] as string || req.empresaId!;
+      const empresaId = req.empresaId!;
       const userId = req.user?.id || '00000000-0000-0000-0000-000000000001';
       const userRole = req.userRolEnEmpresa || req.user?.rolGlobal || 'ADMIN_ESTUDIO';
       const { motivo } = req.body;

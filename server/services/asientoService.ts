@@ -234,9 +234,18 @@ export const asientoService = {
       throw new Error('VERSION_DESACTUALIZADA: El asiento fue modificado por otro usuario.');
     }
 
+    let sumDebe = Money.create(0);
+    let sumHaber = Money.create(0);
+    for (const d of input.detalles) {
+      sumDebe = Money.add(sumDebe, d.debe);
+      sumHaber = Money.add(sumHaber, d.haber);
+    }
+
     ASIENTOS_MEMORIA[idx] = {
       ...ASIENTOS_MEMORIA[idx],
       ...input,
+      totalDebe: Money.toNumber(sumDebe),
+      totalHaber: Money.toNumber(sumHaber),
       version: expectedVersion + 1,
       updatedAt: new Date().toISOString()
     };
@@ -449,6 +458,33 @@ export const asientoService = {
 
     const item = ASIENTOS_MEMORIA.find(a => a.id === asientoId);
     if (!item) throw new Error('ASIENTO_NO_ENCONTRADO');
+
+    const extornoAsiento = {
+      id: extornoId,
+      empresaId,
+      periodoId: item.periodoId,
+      subdiarioId: item.subdiarioId,
+      numero: `${item.numero || 'EXT'}-EXT`,
+      fecha: new Date().toISOString().split('T')[0],
+      glosa: `EXTORNO: ${item.glosa}`,
+      moneda: item.moneda || 'PEN',
+      tipoCambio: item.tipoCambio || 1.0,
+      estado: 'CONTABILIZADO',
+      origen: 'EXTORNO',
+      origenId: asientoId,
+      totalDebe: item.totalHaber,
+      totalHaber: item.totalDebe,
+      cuadrado: true,
+      detalles: (item.detalles || []).map((d: any, idx: number) => ({
+        ...d,
+        linea: idx + 1,
+        debe: d.haber,
+        haber: d.debe
+      })),
+      createdAt: new Date().toISOString()
+    };
+    ASIENTOS_MEMORIA.push(extornoAsiento);
+
     item.estado = 'ANULADO';
     item.motivoAnulacion = motivo;
     item.asientoExtornoId = extornoId;

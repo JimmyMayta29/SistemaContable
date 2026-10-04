@@ -9,6 +9,9 @@ import { sunatSirePleRoutes } from './sunatSirePleRoutes';
 import { tributarioAnualRoutes } from './tributarioAnualRoutes';
 import { activosKardexRoutes } from './activosKardexRoutes';
 import { authRoutes } from './authRoutes';
+import { setupRoutes } from './setupRoutes';
+import { importacionRoutes } from './importacionRoutes';
+import { backupEmpresaRoutes } from './backupEmpresaRoutes';
 import { requireAuth } from '../middlewares/auth';
 import { empresaGuard } from '../middlewares/empresaGuard';
 import { db } from '../config/database';
@@ -36,6 +39,9 @@ router.get('/e/:empresaId/verificar-acceso', requireAuth, empresaGuard(), (req, 
 });
 
 router.use('/auth', authRoutes);
+router.use('/setup', setupRoutes);
+router.use('/importacion', importacionRoutes);
+router.use('/', backupEmpresaRoutes);
 router.use('/empresas', empresaRoutes);
 router.use('/parametros', parametroRoutes);
 router.use('/migration', migrationRoutes);

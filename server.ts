@@ -7,6 +7,11 @@ import { runMigrations } from './server/db/migrate';
 import { env } from './server/config/env';
 
 async function startServer() {
+  if (env.NODE_ENV === 'production' && !env.DATABASE_URL) {
+    console.error('❌ [Server] FATAL: NODE_ENV=production requiere DATABASE_URL configurada. El servidor no arrancará con motor en memoria.');
+    process.exit(1);
+  }
+
   const app = express();
 
   app.use(cors());

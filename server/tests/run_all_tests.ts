@@ -8,14 +8,19 @@ const suites = [
   { name: 'Fase 6: Integración SUNAT/SIRE, XML UBL/CDR & PLE', path: 'server/tests/run_tests_fase6.ts' },
   { name: 'Fase 7: Seguridad, RBAC, RLS, Envelope Encryption & Auditoría', path: 'server/tests/run_tests_fase7.ts' },
   { name: 'Fase 7B: Navegación por Empresa, Entorno Aislado & Selector Multi-Nivel', path: 'server/tests/run_tests_fase7b.ts' },
+  { name: 'Fase 7C-2: Reportes SISCONT (Hoja de Trabajo 10 Columnas & Libro Diario)', path: 'server/tests/run_tests_fase7c2.ts' },
   { name: 'Fase 8: Calidad, PostgreSQL, Concurrencia & Property Testing', path: 'server/tests/run_tests_fase8.ts' },
   { name: 'Fase 9: Automatización Tributaria Avanzada, PLAME & SIRE Cierre', path: 'server/tests/run_tests_fase9.ts' },
   { name: 'Fase 10: Auditoría Preventiva, DAOT 3500 & Cierre Anual PCGE', path: 'server/tests/run_tests_fase10.ts' },
-  { name: 'Fase 11: Activos Fijos (Libro 7.1), Kardex (Libro 13.1) & Prorrata IGV', path: 'server/tests/run_tests_fase11.ts' }
+  { name: 'Fase 11: Activos Fijos (Libro 7.1), Kardex (Libro 13.1) & Prorrata IGV', path: 'server/tests/run_tests_fase11.ts' },
+  { name: 'Fase 13: Comportamiento & Cobertura de Servicios Críticos', path: 'server/tests/run_tests_fase13_cobertura.ts' },
+  { name: 'Fase 13: Empresa Demo S.A.C. & Idempotencia', path: 'server/tests/run_tests_fase13_demo.ts' },
+  { name: 'Fase 13: Backup y Restauración por Empresa SISCONT', path: 'server/tests/run_tests_fase13_backup.ts' },
+  { name: 'Fase 13: Motor de Importación CSV/Excel & Rollback', path: 'server/tests/run_tests_fase13_importacion.ts' }
 ];
 
 console.log('========================================================================');
-console.log('🚀 EJECUTANDO BATERÍA COMPLETA DE PRUEBAS DE CALIDAD (FASES 1 - 11)');
+console.log('🚀 EJECUTANDO BATERÍA COMPLETA DE PRUEBAS DE CALIDAD (FASES 1 - 13)');
 console.log('========================================================================\n');
 
 let totalPassed = 0;
@@ -38,6 +43,5 @@ for (const suite of suites) {
 
 const totalTime = ((Date.now() - startTotal) / 1000).toFixed(2);
 console.log('========================================================================');
-console.log(`🏆 RESUMEN FINAL: ${totalPassed}/${totalSuites} SUITES APROBADAS SATISFACTORIAMENTE EN ${totalTime}s`);
-console.log('🎯 SISTEMA CONTABLE Y TRIBUTARIO HOMOLOGADO Y LISTO PARA PRODUCCIÓN');
+console.log(`RESULTADO FINAL: ${totalPassed}/${totalSuites} suites aprobadas (${totalSuites - totalPassed} fallidas) en ${totalTime}s`);
 console.log('========================================================================\n');

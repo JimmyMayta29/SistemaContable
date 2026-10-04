@@ -47,72 +47,75 @@ export interface RefreshTokenModel {
 }
 
 // --------------------------------------------------------------------------
-// Almacén en Memoria Transaccional para Autenticación y Membresías
+// Almacén en Memoria Transaccional para Autenticación y Membresías (Fase 13)
 // --------------------------------------------------------------------------
-const HASH_DEFAULT = bcrypt.hashSync('Sunaconta2026!', 8);
-const MFA_SECRET_ADMIN_DEMO = 'JBSWY3DPEHPK3PXP'; // Base32 predeterminado para pruebas
+export const USUARIOS_ESTUDIO_MEMORIA: UsuarioEstudioModel[] = [];
+export const USUARIOS_EMPRESA_MEMORIA: UsuarioEmpresaModel[] = [];
 
-export const USUARIOS_ESTUDIO_MEMORIA: UsuarioEstudioModel[] = [
-  {
-    id: 'usr-admin-01',
-    email: 'admin@sunaconta.pe',
-    passwordHash: HASH_DEFAULT,
-    nombre: 'Administrador General',
-    rolGlobal: 'ADMIN_ESTUDIO',
-    mfaSecret: MFA_SECRET_ADMIN_DEMO,
-    mfaActivado: true,
-    isActive: true,
-    createdAt: '2026-01-01T00:00:00.000Z'
-  },
-  {
-    id: 'usr-contador-01',
-    email: 'contador@sunaconta.pe',
-    passwordHash: HASH_DEFAULT,
-    nombre: 'Contador Senior',
-    rolGlobal: 'CONTADOR_SENIOR',
-    mfaActivado: false,
-    isActive: true,
-    createdAt: '2026-01-01T00:00:00.000Z'
-  },
-  {
-    id: 'usr-asistente-01',
-    email: 'asistente@sunaconta.pe',
-    passwordHash: HASH_DEFAULT,
-    nombre: 'Asistente Contable',
-    rolGlobal: 'ASISTENTE_CONTABLE',
-    mfaActivado: false,
-    isActive: true,
-    createdAt: '2026-01-01T00:00:00.000Z'
-  },
-  {
-    id: 'usr-auditor-01',
-    email: 'auditor@sunaconta.pe',
-    passwordHash: HASH_DEFAULT,
-    nombre: 'Auditor Tributario Revisor',
-    rolGlobal: 'AUDITOR_REVISOR',
-    mfaActivado: false,
-    isActive: true,
-    createdAt: '2026-01-01T00:00:00.000Z'
-  }
-];
+/**
+ * Fixture exclusivo para pruebas automatizadas (Fase 7, 7B, 13)
+ * Solo se invoca en contextos de testing, nunca en arranque de producción.
+ */
+export function sembrarUsuariosPrueba() {
+  if (USUARIOS_ESTUDIO_MEMORIA.length > 0) return;
+  const HASH_DEFAULT = bcrypt.hashSync('Sunaconta2026!', 8);
+  const MFA_SECRET_ADMIN_DEMO = 'JBSWY3DPEHPK3PXP'; // Base32 predeterminado para pruebas
 
-export const USUARIOS_EMPRESA_MEMORIA: UsuarioEmpresaModel[] = [
-  // Admin tiene acceso a todas las empresas principales
-  { id: 'ue-01', usuarioId: 'usr-admin-01', empresaId: 'emp-01', rolEnEmpresa: 'ADMIN_ESTUDIO', estado: 'ACTIVO', createdAt: '2026-01-01T00:00:00.000Z' },
-  { id: 'ue-02', usuarioId: 'usr-admin-01', empresaId: '00000000-0000-0000-0000-000000000001', rolEnEmpresa: 'ADMIN_ESTUDIO', estado: 'ACTIVO', createdAt: '2026-01-01T00:00:00.000Z' },
-  { id: 'ue-03', usuarioId: 'usr-admin-01', empresaId: '00000000-0000-0000-0000-000000000002', rolEnEmpresa: 'ADMIN_ESTUDIO', estado: 'ACTIVO', createdAt: '2026-01-01T00:00:00.000Z' },
+  USUARIOS_ESTUDIO_MEMORIA.push(
+    {
+      id: 'usr-admin-01',
+      email: 'admin@sunaconta.pe',
+      passwordHash: HASH_DEFAULT,
+      nombre: 'Administrador General',
+      rolGlobal: 'ADMIN_ESTUDIO',
+      mfaSecret: MFA_SECRET_ADMIN_DEMO,
+      mfaActivado: true,
+      isActive: true,
+      createdAt: '2026-01-01T00:00:00.000Z'
+    },
+    {
+      id: 'usr-contador-01',
+      email: 'contador@sunaconta.pe',
+      passwordHash: HASH_DEFAULT,
+      nombre: 'Contador Senior',
+      rolGlobal: 'CONTADOR_SENIOR',
+      mfaActivado: false,
+      isActive: true,
+      createdAt: '2026-01-01T00:00:00.000Z'
+    },
+    {
+      id: 'usr-asistente-01',
+      email: 'asistente@sunaconta.pe',
+      passwordHash: HASH_DEFAULT,
+      nombre: 'Asistente Contable',
+      rolGlobal: 'ASISTENTE_CONTABLE',
+      mfaActivado: false,
+      isActive: true,
+      createdAt: '2026-01-01T00:00:00.000Z'
+    },
+    {
+      id: 'usr-auditor-01',
+      email: 'auditor@sunaconta.pe',
+      passwordHash: HASH_DEFAULT,
+      nombre: 'Auditor Tributario Revisor',
+      rolGlobal: 'AUDITOR_REVISOR',
+      mfaActivado: false,
+      isActive: true,
+      createdAt: '2026-01-01T00:00:00.000Z'
+    }
+  );
 
-  // Contador tiene acceso a Empresa A y emp-01
-  { id: 'ue-04', usuarioId: 'usr-contador-01', empresaId: 'emp-01', rolEnEmpresa: 'CONTADOR_SENIOR', estado: 'ACTIVO', createdAt: '2026-01-01T00:00:00.000Z' },
-  { id: 'ue-05', usuarioId: 'usr-contador-01', empresaId: '00000000-0000-0000-0000-000000000001', rolEnEmpresa: 'CONTADOR_SENIOR', estado: 'ACTIVO', createdAt: '2026-01-01T00:00:00.000Z' },
-
-  // Asistente tiene acceso a Empresa A y emp-01
-  { id: 'ue-06', usuarioId: 'usr-asistente-01', empresaId: 'emp-01', rolEnEmpresa: 'ASISTENTE_CONTABLE', estado: 'ACTIVO', createdAt: '2026-01-01T00:00:00.000Z' },
-  { id: 'ue-07', usuarioId: 'usr-asistente-01', empresaId: '00000000-0000-0000-0000-000000000001', rolEnEmpresa: 'ASISTENTE_CONTABLE', estado: 'ACTIVO', createdAt: '2026-01-01T00:00:00.000Z' },
-
-  // Auditor solo tiene acceso a emp-01
-  { id: 'ue-08', usuarioId: 'usr-auditor-01', empresaId: 'emp-01', rolEnEmpresa: 'AUDITOR_REVISOR', estado: 'ACTIVO', createdAt: '2026-01-01T00:00:00.000Z' }
-];
+  USUARIOS_EMPRESA_MEMORIA.push(
+    { id: 'ue-01', usuarioId: 'usr-admin-01', empresaId: 'emp-01', rolEnEmpresa: 'ADMIN_ESTUDIO', estado: 'ACTIVO', createdAt: '2026-01-01T00:00:00.000Z' },
+    { id: 'ue-02', usuarioId: 'usr-admin-01', empresaId: '00000000-0000-0000-0000-000000000001', rolEnEmpresa: 'ADMIN_ESTUDIO', estado: 'ACTIVO', createdAt: '2026-01-01T00:00:00.000Z' },
+    { id: 'ue-03', usuarioId: 'usr-admin-01', empresaId: '00000000-0000-0000-0000-000000000002', rolEnEmpresa: 'ADMIN_ESTUDIO', estado: 'ACTIVO', createdAt: '2026-01-01T00:00:00.000Z' },
+    { id: 'ue-04', usuarioId: 'usr-contador-01', empresaId: 'emp-01', rolEnEmpresa: 'CONTADOR_SENIOR', estado: 'ACTIVO', createdAt: '2026-01-01T00:00:00.000Z' },
+    { id: 'ue-05', usuarioId: 'usr-contador-01', empresaId: '00000000-0000-0000-0000-000000000001', rolEnEmpresa: 'CONTADOR_SENIOR', estado: 'ACTIVO', createdAt: '2026-01-01T00:00:00.000Z' },
+    { id: 'ue-06', usuarioId: 'usr-asistente-01', empresaId: 'emp-01', rolEnEmpresa: 'ASISTENTE_CONTABLE', estado: 'ACTIVO', createdAt: '2026-01-01T00:00:00.000Z' },
+    { id: 'ue-07', usuarioId: 'usr-asistente-01', empresaId: '00000000-0000-0000-0000-000000000001', rolEnEmpresa: 'ASISTENTE_CONTABLE', estado: 'ACTIVO', createdAt: '2026-01-01T00:00:00.000Z' },
+    { id: 'ue-08', usuarioId: 'usr-auditor-01', empresaId: 'emp-01', rolEnEmpresa: 'AUDITOR_REVISOR', estado: 'ACTIVO', createdAt: '2026-01-01T00:00:00.000Z' }
+  );
+}
 
 export const REFRESH_TOKENS_MEMORIA: RefreshTokenModel[] = [];
 

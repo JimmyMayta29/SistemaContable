@@ -1,7 +1,5 @@
 import { db } from '../config/database';
 import { encryptSensitive } from '../utils/crypto';
-import { EMPRESAS_CLIENTES_DEMO } from '../../src/data/empresasClientes';
-import { PLAN_CONTABLE_PCGE } from '../../src/data/pcgeAccounts';
 
 export interface EmpresaModel {
   id: string;
@@ -19,28 +17,33 @@ export interface EmpresaModel {
   contactoTelefono?: string;
   contactoEmail?: string;
   monedaPrincipal: 'PEN' | 'USD';
+  esDemo?: boolean;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
-// Almacén en memoria sincronizado para alta disponibilidad
-const EMPRESAS_STORE: EmpresaModel[] = EMPRESAS_CLIENTES_DEMO.map(e => ({
-  id: e.id,
+export const DATOS_EMPRESA_DEMO: EmpresaModel = {
+  id: 'emp-demo-sac',
   tenantId: '00000000-0000-0000-0000-000000000001',
-  codigoEmpresa: e.codigoEmpresa || e.ruc.substring(0, 8),
-  ruc: e.ruc,
-  razonSocial: e.razonSocial,
-  regimenTributario: e.regimenTributario,
-  domicilioFiscal: e.direccionFiscal || 'LIMA, PERÚ',
-  contactoNombre: e.contactoNombre,
-  contactoTelefono: e.contactoTelefono,
-  contactoEmail: e.contactoEmail,
+  codigoEmpresa: 'DEMO2026',
+  ruc: '20000000001',
+  razonSocial: 'EMPRESA DEMO S.A.C.',
+  nombreComercial: 'EMPRESA DEMO CONTABLE',
+  regimenTributario: 'MYPE_TRIBUTARIO',
+  domicilioFiscal: 'AV. DE LA PRUEBA 123, SAN ISIDRO, LIMA',
+  contactoNombre: 'CARLOS ALBERTO DEMO PEREZ',
+  contactoTelefono: '+51 900 000 000',
+  contactoEmail: 'contacto@empresademo.pe',
   monedaPrincipal: 'PEN',
+  esDemo: true,
   isActive: true,
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString()
-}));
+  createdAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: '2026-01-01T00:00:00.000Z'
+};
+
+// Almacén en memoria exclusivo: Solo contiene la Empresa Demo única al arranque normal
+export const EMPRESAS_STORE: EmpresaModel[] = [DATOS_EMPRESA_DEMO];
 
 export const empresaRepository = {
   async listarPorUsuario(userId: string): Promise<EmpresaModel[]> {

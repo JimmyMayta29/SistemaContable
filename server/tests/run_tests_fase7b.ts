@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { authJwtService } from '../services/authJwtService';
+import { authJwtService, sembrarUsuariosPrueba } from '../services/authJwtService';
 import { periodoService } from '../services/periodoService';
 import { asientoService, ASIENTOS_MEMORIA } from '../services/asientoService';
 import { COMPRAS_MEMORIA } from '../services/compraService';
@@ -9,6 +9,7 @@ import { requireAuth, requireEmpresaMembership } from '../middlewares/auth';
 import { Request, Response } from 'express';
 
 async function ejecutarSuiteFase7B() {
+  sembrarUsuariosPrueba();
   console.log('========================================================================');
   console.log('🧪 SUITE DE PRUEBAS AUTOMATIZADAS — FASE 7B: NAVEGACIÓN POR EMPRESA');
   console.log('   (Selector de Empresa, Entorno Aislado Nivel 1/2, RBAC & 403)');
@@ -126,6 +127,51 @@ async function ejecutarSuiteFase7B() {
     };
     await guard(reqArbitrario, resArbitrario, () => {});
     testAssert(statusCodeArbitrario === 403, 'Servidor rechaza empresaId arbitrario inexistente con 403');
+
+    // 1.4 Petición sin token devuelve HTTP 401
+    let codeNoToken = 0;
+    let msgNoToken = '';
+    const reqNoToken: any = { headers: {} };
+    const resNoToken: any = {
+      status(c: number) { codeNoToken = c; return this; },
+      json(d: any) { msgNoToken = d.error || ''; return this; }
+    };
+    await requireAuth(reqNoToken, resNoToken, () => {});
+    testAssert(codeNoToken === 401, 'Petición sin token de autenticación es rechazada con HTTP 401');
+    testAssert(msgNoToken.includes('Token de autenticación requerido'), 'Mensaje 401 explícito por falta de token');
+
+    // 1.5 Header x-empresa-id de otra empresa NO cambia el contexto
+    const reqSpoof: any = {
+      headers: {
+        authorization: `Bearer ${tokenContador}`, // token para EMPRESA_A
+        'x-empresa-id': EMPRESA_B
+      }
+    };
+    let nextSpoof = false;
+    await requireAuth(reqSpoof, {} as any, () => { nextSpoof = true; });
+    testAssert(nextSpoof, 'requireAuth procesa token válido');
+    testAssert(reqSpoof.empresaId === loginContador.empresaActivaId, 'Contexto req.empresaId permanece inmutable como la empresa del token ignorando x-empresa-id: EMPRESA_B');
+    testAssert(reqSpoof.empresaId !== EMPRESA_B, 'Intento de spoofing mediante header x-empresa-id es completamente ignorado');
+
+    // 1.6 Empresa sin membresía devuelve HTTP 403
+    const reqNoMembership: any = {
+      user: {
+        id: 'usr-contador-01',
+        rolGlobal: 'CONTADOR_SENIOR',
+        empresasPermitidas: [EMPRESA_A]
+      },
+      empresaId: EMPRESA_B // empresa a la que no pertenece
+    };
+    let codeNoMem = 0;
+    let msgNoMem = '';
+    const resNoMem: any = {
+      status(c: number) { codeNoMem = c; return this; },
+      json(d: any) { msgNoMem = d.error || ''; return this; }
+    };
+    const membershipCheck = requireEmpresaMembership();
+    await membershipCheck(reqNoMembership, resNoMem, () => {});
+    testAssert(codeNoMem === 403, 'requireEmpresaMembership devuelve HTTP 403 al no tener membresía en la empresa');
+    testAssert(msgNoMem.includes('Acceso denegado'), 'Mensaje 403 explícito por denegación de membresía');
   }
 
   // --------------------------------------------------------------------------

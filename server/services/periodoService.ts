@@ -13,7 +13,7 @@ export interface PeriodoModel {
   cerradoPor?: string | null;
 }
 
-const PERIODOS_MEMORIA: PeriodoModel[] = [
+export const PERIODOS_MEMORIA: PeriodoModel[] = [
   { id: 'per-2026-09', empresaId: 'emp-01', ejercicioId: 'eje-2026', anio: 2026, mes: 9, codigoPeriodo: '2026-09', estado: 'ABIERTO' },
   { id: 'per-2026-08', empresaId: 'emp-01', ejercicioId: 'eje-2026', anio: 2026, mes: 8, codigoPeriodo: '2026-08', estado: 'CERRADO' },
   { id: 'per-2026-10', empresaId: 'emp-01', ejercicioId: 'eje-2026', anio: 2026, mes: 10, codigoPeriodo: '2026-10', estado: 'ABIERTO' }
@@ -32,7 +32,9 @@ export const periodoService = {
       `, [empresaId, anio]);
       if (res.rows.length > 0) return res.rows;
     }
-    return PERIODOS_MEMORIA;
+    const filtered = PERIODOS_MEMORIA.filter(p => p.empresaId === empresaId && (!anio || p.anio === anio));
+    if (filtered.length > 0) return filtered;
+    return PERIODOS_MEMORIA.filter(p => p.empresaId === empresaId);
   },
 
   async obtenerPorCodigo(empresaId: string, codigoPeriodo: string): Promise<PeriodoModel | null> {
@@ -47,7 +49,7 @@ export const periodoService = {
       `, [empresaId, codigoPeriodo]);
       if (res.rows.length > 0) return res.rows[0];
     }
-    return PERIODOS_MEMORIA.find(p => p.codigoPeriodo === codigoPeriodo) || null;
+    return PERIODOS_MEMORIA.find(p => p.empresaId === empresaId && p.codigoPeriodo === codigoPeriodo) || null;
   },
 
   async cerrar(periodoId: string, userId: string, empresaId: string) {
@@ -109,7 +111,7 @@ export const periodoService = {
       }
     }
 
-    const p = PERIODOS_MEMORIA.find(x => x.id === periodoId);
+    const p = PERIODOS_MEMORIA.find(x => x.id === periodoId && (!empresaId || x.empresaId === empresaId)) || PERIODOS_MEMORIA.find(x => x.id === periodoId);
     if (!p) throw new Error('PERIODO_NO_ENCONTRADO');
     p.estado = 'CERRADO';
     p.fechaCierre = new Date().toISOString();
@@ -144,7 +146,7 @@ export const periodoService = {
       return updRes.rows[0];
     }
 
-    const p = PERIODOS_MEMORIA.find(x => x.id === periodoId);
+    const p = PERIODOS_MEMORIA.find(x => x.id === periodoId && (!empresaId || x.empresaId === empresaId)) || PERIODOS_MEMORIA.find(x => x.id === periodoId);
     if (!p) throw new Error('PERIODO_NO_ENCONTRADO');
     p.estado = 'ABIERTO';
     return p;
@@ -159,17 +161,17 @@ export const periodoService = {
     const cleanCodigo = periodoIdOrCodigo.replace(/^per-/, '');
     const p = await this.obtenerPorCodigo(empresaId, cleanCodigo);
     if (!p) {
-      const byId = PERIODOS_MEMORIA.find(x => x.id === periodoIdOrCodigo && (x.empresaId === empresaId || x.empresaId === 'emp-01'));
+      const byId = PERIODOS_MEMORIA.find(x => (x.id === periodoIdOrCodigo || x.codigoPeriodo === cleanCodigo) && x.empresaId === empresaId);
       return byId ? byId.estado === 'CERRADO' : false;
     }
     return p.estado === 'CERRADO';
   },
 
   async abrirPeriodo(empresaId: string, mesOcodigo: string, userId: string) {
-    let p = PERIODOS_MEMORIA.find(x => (x.empresaId === empresaId || x.empresaId === 'emp-01') && x.codigoPeriodo === mesOcodigo);
+    let p = PERIODOS_MEMORIA.find(x => x.empresaId === empresaId && x.codigoPeriodo === mesOcodigo);
     if (!p) {
       p = {
-        id: `per-${mesOcodigo}`,
+        id: `per-${empresaId}-${mesOcodigo}`,
         empresaId,
         ejercicioId: `eje-${mesOcodigo.substring(0, 4)}`,
         anio: parseInt(mesOcodigo.substring(0, 4), 10),
@@ -186,10 +188,10 @@ export const periodoService = {
   },
 
   async cerrarPeriodo(empresaId: string, mesOcodigo: string, userId: string) {
-    let p = PERIODOS_MEMORIA.find(x => (x.empresaId === empresaId || x.empresaId === 'emp-01') && x.codigoPeriodo === mesOcodigo);
+    let p = PERIODOS_MEMORIA.find(x => x.empresaId === empresaId && x.codigoPeriodo === mesOcodigo);
     if (!p) {
       p = {
-        id: `per-${mesOcodigo}`,
+        id: `per-${empresaId}-${mesOcodigo}`,
         empresaId,
         ejercicioId: `eje-${mesOcodigo.substring(0, 4)}`,
         anio: parseInt(mesOcodigo.substring(0, 4), 10),
@@ -206,7 +208,7 @@ export const periodoService = {
   },
 
   async reabrirPeriodo(empresaId: string, mesOcodigo: string, role: string = 'ADMIN_ESTUDIO', userId?: string) {
-    let p = PERIODOS_MEMORIA.find(x => (x.empresaId === empresaId || x.empresaId === 'emp-01') && x.codigoPeriodo === mesOcodigo);
+    let p = PERIODOS_MEMORIA.find(x => x.empresaId === empresaId && x.codigoPeriodo === mesOcodigo);
     if (p) {
       p.estado = 'ABIERTO';
       p.empresaId = empresaId;
