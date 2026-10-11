@@ -282,7 +282,7 @@ export const importacionService = {
           errores.push({ fila: numeroFila, campo: 'descripcion', valor: desc, mensaje: 'La descripción es obligatoria.' });
           tieneError = true;
         }
-        const yaExiste = ARTICULOS_MEMORIA.some(a => a.empresaId === empresaId && a.codigoArticulo === codigo);
+        const yaExiste = ARTICULOS_MEMORIA.some(a => a.empresaId === empresaId && a.codigoProducto === codigo);
         if (yaExiste) filasDuplicadas++;
         objFila._esDuplicado = yaExiste;
       }
@@ -384,15 +384,15 @@ export const importacionService = {
           const nuevoAnexo: AnexoModel = {
             id: `anx-${Date.now()}-${insertados}`,
             empresaId,
-            tipoAnexo: esProveedor ? 'PROVEEDOR' : 'CLIENTE',
-            tipoDocumento: fila.tipodoc || (numDoc.length === 11 ? '6' : '1'),
+            tipoDocumento: (fila.tipodoc || (numDoc.length === 11 ? '6' : '1')) as any,
             numeroDocumento: numDoc,
             razonSocial: fila.razonsocial,
             direccion: fila.direccion || 'LIMA, PERÚ',
-            telefono: fila.telefono,
-            email: fila.email,
+            tipoEntidad: esProveedor ? 'PROVEEDOR' : 'CLIENTE',
             condicionSunat: 'HABIDO',
-            estadoSunat: 'ACTIVO'
+            estadoSunat: 'ACTIVO',
+            isActive: true,
+            createdAt: new Date().toISOString()
           };
           ANEXOS_MEMORIA.push(nuevoAnexo);
           idsInsertados.push(nuevoAnexo.id);
@@ -409,7 +409,7 @@ export const importacionService = {
         if (existente) {
           if (opciones.duplicados === 'ACTUALIZAR') {
             existente.nombres = fila.nombres;
-            existente.sueldoBasico = parseFloat(fila.sueldobasico || '0');
+            existente.sueldoBase = parseFloat(fila.sueldobasico || '0');
             actualizados++;
           } else {
             omitidos++;
@@ -418,17 +418,23 @@ export const importacionService = {
           const nuevoTrabajador: TrabajadorModel = {
             id: `tra-imp-${Date.now()}-${insertados}`,
             empresaId,
-            tipoDocumento: fila.tipodoc || '1',
+            tipoDocumento: (fila.tipodoc || '1') as any,
             numeroDocumento: numDoc,
             nombres: fila.nombres,
-            apellidoPaterno: fila.apellidopaterno || '',
-            apellidoMaterno: fila.apellidomaterno || '',
+            apellidos: `${fila.apellidopaterno || ''} ${fila.apellidomaterno || ''}`.trim() || 'NO ESPECIFICADO',
+            fechaNacimiento: '1990-01-01',
+            direccion: 'LIMA, PERÚ',
+            telefono: '999888777',
+            email: 'empleado@empresa.com',
+            fechaIngreso: new Date().toISOString().split('T')[0],
             cargo: fila.cargo || 'EMPLEADO',
-            regimenPensionario: fila.regimenpensionario || 'ONP',
-            sueldoBasico: parseFloat(fila.sueldobasico || '1025.00'),
-            asignacionFamiliar: String(fila.asignacionfamiliar).toUpperCase() === 'SI',
-            estado: 'ACTIVO',
-            fechaIngreso: new Date().toISOString().split('T')[0]
+            centroCosto: fila.centrocosto || 'ADMINISTRACION',
+            regimenLaboral: 'GENERAL',
+            sueldoBase: parseFloat(fila.sueldobasico || '1025.00'),
+            tieneAsignacionFamiliar: String(fila.asignacionfamiliar).toUpperCase() === 'SI',
+            sistemaPensiones: (fila.regimenpensionario || 'ONP') as any,
+            activo: true,
+            version: 1
           };
           TRABAJADORES_MEMORIA.push(nuevoTrabajador);
           idsInsertados.push(nuevoTrabajador.id);
@@ -437,7 +443,7 @@ export const importacionService = {
       }
       else if (tipo === 'ARTICULOS') {
         const codigo = fila.codigo;
-        const existente = ARTICULOS_MEMORIA.find(a => a.empresaId === empresaId && a.codigoArticulo === codigo);
+        const existente = ARTICULOS_MEMORIA.find(a => a.empresaId === empresaId && a.codigoProducto === codigo);
         if (existente) {
           if (opciones.duplicados === 'ACTUALIZAR') {
             existente.descripcion = fila.descripcion;
@@ -449,16 +455,19 @@ export const importacionService = {
           const nuevoArticulo: ArticuloKardexModel = {
             id: `art-imp-${Date.now()}-${insertados}`,
             empresaId,
-            codigoArticulo: codigo,
+            codigoProducto: codigo,
             descripcion: fila.descripcion,
-            unidadMedida: fila.unidadmedida || 'NIU',
-            tipoExistencia: fila.tipoexistencia || 'MERCADERIA',
+            unidadMedidaSUNAT: fila.unidadmedida || 'NIU',
+            tipoExistenciaSUNAT: fila.tipoexistencia || '01',
             metodoValuacion: 'PROMEDIO_PONDERADO',
-            cuentaInventarioCodigo: fila.cuentainventario || '20111',
-            cuentaCostoVentaCodigo: fila.cuentacostoventa || '69111',
-            saldoFisicoActual: 0,
-            costoPromedioActual: 0,
-            saldoValoradoActual: 0
+            cuentaExistenciasPCGE: fila.cuentainventario || '20111',
+            cuentaCostoVentasPCGE: fila.cuentacostoventa || '69111',
+            cuentaVariacionPCGE: '6111',
+            stockActual: 0,
+            costoUnitarioActual: 0,
+            costoTotalValorado: 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
           };
           ARTICULOS_MEMORIA.push(nuevoArticulo);
           idsInsertados.push(nuevoArticulo.id);
@@ -499,6 +508,7 @@ export const importacionService = {
         estado: 'CONTABILIZADO',
         version: 1,
         items,
+        detalles: items as any,
         createdAt: new Date().toISOString()
       };
       ASIENTOS_MEMORIA.push(asientoApertura);

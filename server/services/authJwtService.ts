@@ -349,5 +349,9 @@ export const authJwtService = {
     if (usuariosBorradoresCreados.includes(usuarioActualId)) {
       throw new Error('SEGREGACION_FUNCIONES: Quien registra borradores en el período no puede ejecutar el cierre contable del mismo.');
     }
+  },
+
+  verificarTotp(secret: string, code: string): boolean {
+    return totpService.validarToken(secret, code);
   }
 };

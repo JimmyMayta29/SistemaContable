@@ -26,6 +26,7 @@ import { generarSireRceTxt, exportarComprobantesCsv } from '../../services/sireT
 import { exportarRegistroComprasPdf } from '../../services/pdfExportService';
 import { VisorDocumentoSunatModal } from '../modals/VisorDocumentoSunatModal';
 import { useToast } from '../../context/ToastContext';
+import { EmptyStateInstructivo } from '../common/EmptyStateInstructivo';
 
 interface RegistroComprasViewProps {
   compras: Comprobante[];
@@ -792,8 +793,19 @@ export const RegistroComprasView: React.FC<RegistroComprasViewProps> = ({
                 <tbody className="divide-y divide-slate-100 font-mono text-[11px]">
                   {filtrados.length === 0 ? (
                     <tr>
-                      <td colSpan={12} className="p-8 text-center text-slate-400 font-sans">
-                        No se encontraron comprobantes registrados para los filtros seleccionados.
+                      <td colSpan={12} className="p-4 text-center font-sans">
+                        <EmptyStateInstructivo
+                          moduloNombre="Registro de Compras (RCE)"
+                          titulo="No hay comprobantes de compra en este periodo"
+                          descripcion="El Registro de Compras Electrónico (RCE) almacena las adquisiciones con desglose tributario oficial (Base gravada, IGV, No gravada y SPOT de Detracción)."
+                          checklist={[
+                            { titulo: 'Identificación de Proveedor (RUC/DNI)', cumplido: false, descripcion: 'Verificar condición de habido y estado activo en SUNAT' },
+                            { titulo: 'Asignación de Cuenta de Gasto / Inventario', cumplido: false, descripcion: 'Elemento 60 (Mercaderías) o 63/65 (Servicios/Gastos) con destino automático' },
+                            { titulo: 'Verificación de Detracción / Bancarización', cumplido: false, descripcion: 'Operaciones sujetas al SPOT mayores a S/ 700.00 (Medio de pago bancarizado)' }
+                          ]}
+                          onRegistrarNuevo={() => setActiveTab('DIGITACION')}
+                          textoRegistrar="Registrar Primera Compra"
+                        />
                       </td>
                     </tr>
                   ) : (

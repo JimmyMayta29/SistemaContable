@@ -44,6 +44,8 @@ import { ConfigEmpresaModal } from './components/modals/ConfigEmpresaModal';
 import { PdfExportModal, TipoReportePdf } from './components/modals/PdfExportModal';
 import { SearchEmpresasModal } from './components/modals/SearchEmpresasModal';
 import { ConfirmarCambioEmpresaModal } from './components/modals/ConfirmarCambioEmpresaModal';
+import { ModalImportacionCsv } from './components/modals/ModalImportacionCsv';
+import { ModalBackupEmpresa } from './components/modals/ModalBackupEmpresa';
 import { useEmpresas, useCrearEmpresa, useMigrarLocalStorage } from './hooks/useEmpresas';
 import { useToast } from './context/ToastContext';
 import { EmpresaPeriodoProvider, useEmpresaPeriodo } from './context/EmpresaPeriodoContext';
@@ -74,6 +76,7 @@ import { AuditoriaView } from './components/views/AuditoriaView';
 import { CarteraSaldosView } from './components/views/CarteraSaldosView';
 import { ActivosKardexView } from './components/views/ActivosKardexView';
 import { UsuariosPermisosView } from './components/views/UsuariosPermisosView';
+import { AsistenteSetupInicial } from './components/setup/AsistenteSetupInicial';
 
 function AppContent({
   empresas,
@@ -196,6 +199,8 @@ function AppContent({
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [pdfTipoInicial, setPdfTipoInicial] = useState<TipoReportePdf>('COMPRAS');
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
 
   // Sincronización de Navegación Cruzada
   useEffect(() => {
@@ -341,6 +346,8 @@ function AppContent({
       <TitleBar
         empresaActiva={empresaActiva}
         onOpenConfig={() => setIsConfigModalOpen(true)}
+        onOpenImport={() => setIsImportModalOpen(true)}
+        onOpenBackup={() => setIsBackupModalOpen(true)}
         onOpenPdfExport={() => {
           setPdfTipoInicial(
             activeTab === 'rvie_ventas' ? 'VENTAS' :
@@ -633,11 +640,43 @@ function AppContent({
           honorarios={honorarios}
         />
       )}
+
+      {/* Modal: Importación CSV/Excel */}
+      <ModalImportacionCsv
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImportExitoso={() => {
+          window.location.reload();
+        }}
+      />
+
+      {/* Modal: Copias de Seguridad por Empresa (SISCONT) */}
+      <ModalBackupEmpresa
+        isOpen={isBackupModalOpen}
+        onClose={() => setIsBackupModalOpen(false)}
+      />
     </div>
   );
 }
 
 export default function App() {
+  const [setupConfigurado, setSetupConfigurado] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetch('/api/setup/status')
+      .then(res => res.json())
+      .then(data => {
+        if (data.data && typeof data.data.configurado === 'boolean') {
+          setSetupConfigurado(data.data.configurado);
+        } else {
+          setSetupConfigurado(true);
+        }
+      })
+      .catch(() => {
+        setSetupConfigurado(true);
+      });
+  }, []);
+
   const { data: apiEmpresas = [] } = useEmpresas();
   const crearEmpresaMutation = useCrearEmpresa();
   const migrarMutation = useMigrarLocalStorage();
@@ -664,6 +703,17 @@ export default function App() {
       contactoEmail: nueva.contactoEmail
     });
   };
+
+  if (setupConfigurado === false) {
+    return (
+      <AsistenteSetupInicial
+        onSetupCompletado={() => {
+          setSetupConfigurado(true);
+          window.location.reload();
+        }}
+      />
+    );
+  }
 
   return (
     <EmpresaPeriodoProvider initialEmpresas={empresas}>

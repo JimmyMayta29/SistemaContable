@@ -81,6 +81,7 @@ export interface CompraModel {
 
 // Almacén en memoria sincronizado para pruebas y fallback
 export const COMPRAS_MEMORIA: CompraModel[] = [];
+export type CuentaPorPagarModel = any;
 export const CXP_MEMORIA: any[] = [];
 export const DETRACCIONES_MEMORIA: any[] = [];
 

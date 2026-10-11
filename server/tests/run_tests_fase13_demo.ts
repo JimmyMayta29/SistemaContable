@@ -70,8 +70,8 @@ async function ejecutarSuiteFase13Demo() {
 
     let todosCuadrados = true;
     for (const ast of asientosDemo) {
-      const sumDebe = ast.items.reduce((s, it) => s + (it.debe || 0), 0);
-      const sumHaber = ast.items.reduce((s, it) => s + (it.haber || 0), 0);
+      const sumDebe = (ast.items || []).reduce((s: number, it: any) => s + (it.debe || 0), 0);
+      const sumHaber = (ast.items || []).reduce((s: number, it: any) => s + (it.haber || 0), 0);
       if (Math.abs(sumDebe - sumHaber) > 0.01) {
         todosCuadrados = false;
         break;

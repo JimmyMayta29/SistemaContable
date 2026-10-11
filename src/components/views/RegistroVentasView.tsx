@@ -18,6 +18,7 @@ import { operacionesApi } from '../../api/operacionesApi';
 import { generarSireRvieTxt, exportarComprobantesCsv } from '../../services/sireTxtGenerator';
 import { exportarRegistroVentasPdf } from '../../services/pdfExportService';
 import { useToast } from '../../context/ToastContext';
+import { EmptyStateInstructivo } from '../common/EmptyStateInstructivo';
 
 interface RegistroVentasViewProps {
   ventas: Comprobante[];
@@ -689,8 +690,19 @@ export const RegistroVentasView: React.FC<RegistroVentasViewProps> = ({
                 <tbody className="divide-y divide-slate-100 font-mono text-[11px]">
                   {filtrados.length === 0 ? (
                     <tr>
-                      <td colSpan={11} className="p-8 text-center text-slate-400 font-sans">
-                        No se encontraron comprobantes de venta registrados.
+                      <td colSpan={11} className="p-4 text-center font-sans">
+                        <EmptyStateInstructivo
+                          moduloNombre="Registro de Ventas (RVIE)"
+                          titulo="No hay comprobantes de venta en este periodo"
+                          descripcion="El Registro de Ventas e Ingresos Electrónico (RVIE) consolida la emisión de facturas y boletas con cálculo automático del débito fiscal IGV 18% y cuentas por cobrar (1212)."
+                          checklist={[
+                            { titulo: 'Identificación de Cliente', cumplido: false, descripcion: 'RUC para Facturas o DNI para Boletas de venta' },
+                            { titulo: 'Definición de Serie y Correlativo', cumplido: false, descripcion: 'Serie F001 / B001 con correlativo numérico de 8 dígitos' },
+                            { titulo: 'Asignación de Cuenta de Ingreso (70)', cumplido: false, descripcion: 'Cuenta 7012 (Mercaderías) o 7041 (Servicios prestados)' }
+                          ]}
+                          onRegistrarNuevo={() => setActiveTab('DIGITACION')}
+                          textoRegistrar="Emitir Primera Venta"
+                        />
                       </td>
                     </tr>
                   ) : (

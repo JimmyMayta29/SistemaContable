@@ -26,6 +26,7 @@ import {
   OpcionesLibroDiarioSISCONT
 } from '../../services/siscontReportsEngine';
 import { useToast } from '../../context/ToastContext';
+import { EmptyStateInstructivo } from '../common/EmptyStateInstructivo';
 
 interface LibroDiarioViewProps {
   asientos: AsientoContable[];
@@ -356,6 +357,21 @@ export const LibroDiarioView: React.FC<LibroDiarioViewProps> = ({
       </div>
 
       {/* 4. Estructura Jerárquica del Libro Diario SISCONT */}
+      {subdiariosVisibles.length === 0 && (
+        <EmptyStateInstructivo
+          moduloNombre="Libro Diario (Formato 5.1)"
+          titulo="No existen asientos contabilizados en el Libro Diario"
+          descripcion="El Libro Diario registra cronológicamente los asientos clasificados por subdiario (Apertura, Compras, Ventas, Cobranzas, Pagos, Planilla, Honorarios y Ajustes) cumpliendo partida doble estricta."
+          checklist={[
+            { titulo: 'Generación de Asiento de Apertura', cumplido: false, descripcion: 'Subdiario 00 con los saldos iniciales del balance de apertura' },
+            { titulo: 'Contabilización de Compras y Ventas', cumplido: false, descripcion: 'Subdiarios 01 y 02 con destino automático de gasto y existencias' },
+            { titulo: 'Verificación de Partida Doble', cumplido: true, descripcion: 'Total Débito debe ser igual al Total Crédito al céntimo' }
+          ]}
+          onRegistrarNuevo={onGenerarAsientosMasivos}
+          textoRegistrar="Regenerar Asientos Automáticos"
+        />
+      )}
+
       <div className="space-y-6">
         {subdiariosVisibles.map((sub) => (
           <div 

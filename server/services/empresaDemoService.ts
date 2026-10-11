@@ -15,20 +15,21 @@ export const EMPRESA_DEMO_RUC = '20000000001'; // Módulo 11 válido: 2*5 + 0 = 
 
 export const DATOS_EMPRESA_DEMO: EmpresaModel = {
   id: EMPRESA_DEMO_ID,
+  tenantId: '00000000-0000-0000-0000-000000000001',
+  codigoEmpresa: 'DEMO2026',
   ruc: EMPRESA_DEMO_RUC,
   razonSocial: 'EMPRESA DEMO S.A.C.',
   nombreComercial: 'EMPRESA DEMO CONTABLE',
-  direccionFiscal: 'AV. DE LA PRUEBA 123, SAN ISIDRO, LIMA',
   regimenTributario: 'MYPE_TRIBUTARIO',
-  telefono: '+51 900 000 000',
-  email: 'contacto@empresademo.pe',
-  representanteLegal: 'CARLOS ALBERTO DEMO PEREZ',
-  contadorNombre: 'MARIA ELENA CONTADORA CPC',
-  contadorColegiatura: 'CPC-54321',
-  ejercicioActivo: 2026,
+  domicilioFiscal: 'AV. DE LA PRUEBA 123, SAN ISIDRO, LIMA',
+  contactoNombre: 'CARLOS ALBERTO DEMO PEREZ',
+  contactoTelefono: '+51 900 000 000',
+  contactoEmail: 'contacto@empresademo.pe',
   monedaPrincipal: 'PEN',
   esDemo: true,
-  createdAt: '2026-01-01T00:00:00.000Z'
+  isActive: true,
+  createdAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: '2026-01-01T00:00:00.000Z'
 };
 
 export const empresaDemoService = {
@@ -133,6 +134,12 @@ export const empresaDemoService = {
     ANEXOS_MEMORIA.push(...clientes);
 
     // 7. Asiento de Apertura del Ejercicio (Subdiario 00 - 01/01/2026)
+    const itemsApertura: AsientoDetalleModel[] = [
+      { id: 'det-ape-1', asientoId: 'ast-demo-ape-01', linea: 1, cuentaId: '1041', cuentaCodigo: '1041', cuentaNombre: 'Cuentas corrientes operativas', debe: 50000.00, haber: 0 },
+      { id: 'det-ape-2', asientoId: 'ast-demo-ape-01', linea: 2, cuentaId: '1011', cuentaCodigo: '1011', cuentaNombre: 'Caja central', debe: 10000.00, haber: 0 },
+      { id: 'det-ape-3', asientoId: 'ast-demo-ape-01', linea: 3, cuentaId: '5011', cuentaCodigo: '5011', cuentaNombre: 'Capital social - Acciones', debe: 0, haber: 50000.00 },
+      { id: 'det-ape-4', asientoId: 'ast-demo-ape-01', linea: 4, cuentaId: '5911', cuentaCodigo: '5911', cuentaNombre: 'Utilidades acumuladas', debe: 0, haber: 10000.00 }
+    ];
     const asientoApertura: AsientoContableModel = {
       id: `ast-demo-ape-01`,
       empresaId: EMPRESA_DEMO_ID,
@@ -147,12 +154,8 @@ export const empresaDemoService = {
       totalHaber: 60000.00,
       estado: 'CONTABILIZADO',
       version: 1,
-      items: [
-        { id: 'det-ape-1', asientoId: 'ast-demo-ape-01', linea: 1, cuentaId: '1041', cuentaCodigo: '1041', cuentaNombre: 'Cuentas corrientes operativas', debe: 50000.00, haber: 0 },
-        { id: 'det-ape-2', asientoId: 'ast-demo-ape-01', linea: 2, cuentaId: '1011', cuentaCodigo: '1011', cuentaNombre: 'Caja central', debe: 10000.00, haber: 0 },
-        { id: 'det-ape-3', asientoId: 'ast-demo-ape-01', linea: 3, cuentaId: '5011', cuentaCodigo: '5011', cuentaNombre: 'Capital social - Acciones', debe: 0, haber: 50000.00 },
-        { id: 'det-ape-4', asientoId: 'ast-demo-ape-01', linea: 4, cuentaId: '5911', cuentaCodigo: '5911', cuentaNombre: 'Utilidades acumuladas', debe: 0, haber: 10000.00 }
-      ],
+      items: itemsApertura,
+      detalles: itemsApertura,
       createdAt: '2026-07-01T08:00:00.000Z'
     };
     ASIENTOS_MEMORIA.push(asientoApertura);
@@ -190,10 +193,22 @@ export const empresaDemoService = {
         tipoCambio: 1.0,
         baseGravada: base,
         igv,
+        baseNoGravada: 0,
+        exonerado: 0,
+        isc: 0,
+        icbper: 0,
+        otrosTributos: 0,
         total,
+        tipoAdquisicion: '1',
+        formaPago: 'CONTADO',
+        diasCredito: 0,
+        tieneDetraccion: false,
+        tieneRetencion: false,
         estado: 'REGISTRADO',
         asientoId,
-        createdAt: `${fecha}T10:00:00.000Z`
+        version: 1,
+        createdAt: `${fecha}T10:00:00.000Z`,
+        updatedAt: `${fecha}T10:00:00.000Z`
       };
       COMPRAS_MEMORIA.push(compra);
 
@@ -278,10 +293,22 @@ export const empresaDemoService = {
         tipoCambio: 1.0,
         baseGravada: base,
         igv,
+        baseNoGravada: 0,
+        exonerado: 0,
+        isc: 0,
+        icbper: 0,
+        otrosTributos: 0,
         total,
+        tipoOperacion: '0101',
+        formaPago: 'CONTADO',
+        diasCredito: 0,
+        tieneDetraccion: false,
+        tienePercepcion: false,
         estado: 'REGISTRADO',
         asientoId,
-        createdAt: `${fecha}T11:00:00.000Z`
+        version: 1,
+        createdAt: `${fecha}T11:00:00.000Z`,
+        updatedAt: `${fecha}T11:00:00.000Z`
       };
       VENTAS_MEMORIA.push(venta);
 
@@ -324,15 +351,66 @@ export const empresaDemoService = {
         estado: 'CONTABILIZADO',
         version: 1,
         items: itemsAsiento,
+        detalles: itemsAsiento,
         createdAt: `${fecha}T11:05:00.000Z`
       });
     }
 
     // 10. Sembrar 3 Colaboradores y Planillas del Trimestre
     const trabajadores: TrabajadorModel[] = [
-      { id: 'tra-demo-01', empresaId: EMPRESA_DEMO_ID, tipoDocumento: '1', numeroDocumento: '45678901', nombres: 'CARLOS', apellidoPaterno: 'MENDOZA', apellidoMaterno: 'QUISPE', cargo: 'JEFE DE CONTABILIDAD', regimenPensionario: 'AFP_INTEGRA', sueldoBasico: 3500.00, asignacionFamiliar: true, estado: 'ACTIVO', fechaIngreso: '2025-01-15' },
-      { id: 'tra-demo-02', empresaId: EMPRESA_DEMO_ID, tipoDocumento: '1', numeroDocumento: '45678902', nombres: 'MARIA ELENA', apellidoPaterno: 'FLORES', apellidoMaterno: 'ROCA', cargo: 'ASISTENTE CONTABLE', regimenPensionario: 'ONP', sueldoBasico: 2200.00, asignacionFamiliar: false, estado: 'ACTIVO', fechaIngreso: '2025-03-01' },
-      { id: 'tra-demo-03', empresaId: EMPRESA_DEMO_ID, tipoDocumento: '1', numeroDocumento: '45678903', nombres: 'JORGE LUIS', apellidoPaterno: 'PAREDES', apellidoMaterno: 'VEGA', cargo: 'AUXILIAR DE ARCHIVO', regimenPensionario: 'AFP_PRIMA', sueldoBasico: 1800.00, asignacionFamiliar: false, estado: 'ACTIVO', fechaIngreso: '2025-06-01' }
+      {
+        id: 'tra-demo-01',
+        empresaId: EMPRESA_DEMO_ID,
+        tipoDocumento: '1',
+        numeroDocumento: '45678901',
+        nombres: 'CARLOS',
+        apellidos: 'MENDOZA QUISPE',
+        cargo: 'JEFE DE CONTABILIDAD',
+        regimenLaboral: 'GENERAL',
+        sueldoBase: 3500.00,
+        tieneAsignacionFamiliar: true,
+        sistemaPensiones: 'AFP',
+        afpAdministradora: 'INTEGRA',
+        centroCosto: 'CC-ADM',
+        activo: true,
+        fechaIngreso: '2025-01-15',
+        version: 1
+      },
+      {
+        id: 'tra-demo-02',
+        empresaId: EMPRESA_DEMO_ID,
+        tipoDocumento: '1',
+        numeroDocumento: '45678902',
+        nombres: 'MARIA ELENA',
+        apellidos: 'FLORES ROCA',
+        cargo: 'ASISTENTE CONTABLE',
+        regimenLaboral: 'GENERAL',
+        sueldoBase: 2200.00,
+        tieneAsignacionFamiliar: false,
+        sistemaPensiones: 'ONP',
+        centroCosto: 'CC-ADM',
+        activo: true,
+        fechaIngreso: '2025-03-01',
+        version: 1
+      },
+      {
+        id: 'tra-demo-03',
+        empresaId: EMPRESA_DEMO_ID,
+        tipoDocumento: '1',
+        numeroDocumento: '45678903',
+        nombres: 'JORGE LUIS',
+        apellidos: 'PAREDES VEGA',
+        cargo: 'AUXILIAR DE ARCHIVO',
+        regimenLaboral: 'GENERAL',
+        sueldoBase: 1800.00,
+        tieneAsignacionFamiliar: false,
+        sistemaPensiones: 'AFP',
+        afpAdministradora: 'PRIMA',
+        centroCosto: 'CC-LOG',
+        activo: true,
+        fechaIngreso: '2025-06-01',
+        version: 1
+      }
     ];
     TRABAJADORES_MEMORIA.push(...trabajadores);
 
@@ -351,15 +429,17 @@ export const empresaDemoService = {
         id: `pln-demo-${per}`,
         empresaId: EMPRESA_DEMO_ID,
         periodoId: `per-${per}`,
-        totalTrabajadores: 3,
-        totalBruto,
-        totalEssalud: essalud,
-        totalOnp: onp,
-        totalAfp: afpTotal,
+        mes: per,
+        fechaCalculo: `${per}-28`,
+        totalIngresos: totalBruto,
+        totalDescuentos: retenciones,
+        totalAportesEmpleador: essalud,
         totalNeto: netoPagar,
-        estado: 'CONTABILIZADO',
-        asientoId
-      });
+        estado: 'CONTABILIZADA',
+        asientoId,
+        version: 1,
+        lineas: []
+      } as any);
 
       // Asiento contable de planilla (62 vs 4031, 4032, 4111 + Destino 941 vs 791)
       const itemsAsiento: AsientoDetalleModel[] = [

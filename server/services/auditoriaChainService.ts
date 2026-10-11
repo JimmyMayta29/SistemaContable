@@ -15,6 +15,8 @@ export interface AuditoriaLogEntry {
   createdAt: string;
 }
 
+export type AuditoriaChainLog = AuditoriaLogEntry;
+
 export const GENESIS_HASH = '0000000000000000000000000000000000000000000000000000000000000000';
 
 // Almacén append-only en memoria (en PostgreSQL se persiste en tabla auditoria_log con permisos REVOKE UPDATE, DELETE)

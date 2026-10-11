@@ -132,6 +132,7 @@ export const TRABAJADORES_MEMORIA: TrabajadorModel[] = [
 ];
 
 export const PLANILLAS_MEMORIA: PlanillaModel[] = [];
+export type PlanillaResumenModel = PlanillaModel;
 
 export interface ExportadorPlame {
   estado: string;

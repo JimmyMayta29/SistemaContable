@@ -67,9 +67,21 @@ async function ejecutarSuiteFase13Backup() {
     tipoCambio: 1.0,
     baseGravada: 1000,
     igv: 180,
+    baseNoGravada: 0,
+    exonerado: 0,
+    isc: 0,
+    icbper: 0,
+    otrosTributos: 0,
     total: 1180,
+    tipoAdquisicion: '1',
+    formaPago: 'CONTADO',
+    diasCredito: 0,
+    tieneDetraccion: false,
+    tieneRetencion: false,
     estado: 'REGISTRADO',
-    createdAt: '2026-09-10T10:00:00.000Z'
+    version: 1,
+    createdAt: '2026-09-10T10:00:00.000Z',
+    updatedAt: '2026-09-10T10:00:00.000Z'
   });
 
   // --------------------------------------------------------------------------

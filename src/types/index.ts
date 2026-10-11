@@ -195,6 +195,7 @@ export interface EmpresaCliente {
   montoPreliquidacionIgv?: number;
   montoPreliquidacionRenta?: number;
   trabajadoresPlanilla?: number;
+  esDemo?: boolean;
 }
 
 export type EmpresaConfig = EmpresaCliente & {

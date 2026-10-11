@@ -13,22 +13,30 @@ import {
   Lock,
   Layers,
   User,
-  Users
+  Users,
+  RotateCcw,
+  Upload,
+  Archive
 } from 'lucide-react';
 import { EmpresaCliente } from '../../types';
 import { useEmpresaPeriodo, RolEmpresa } from '../../context/EmpresaPeriodoContext';
+import { useToast } from '../../context/ToastContext';
 import { BackgroundJobsPanel } from './BackgroundJobsPanel';
 
 interface TitleBarProps {
   empresaActiva?: EmpresaCliente | null;
   onOpenConfig?: () => void;
   onOpenPdfExport?: () => void;
+  onOpenImport?: () => void;
+  onOpenBackup?: () => void;
 }
 
 export const TitleBar: React.FC<TitleBarProps> = ({
   empresaActiva: propEmpresaActiva,
   onOpenConfig,
-  onOpenPdfExport
+  onOpenPdfExport,
+  onOpenImport,
+  onOpenBackup
 }) => {
   const { 
     nivelNavegacion, 
@@ -47,9 +55,39 @@ export const TitleBar: React.FC<TitleBarProps> = ({
 
   const [isJobsOpen, setIsJobsOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [restableciendoDemo, setRestableciendoDemo] = useState(false);
+  const { success, error: toastError } = useToast();
 
   const empresa = contextEmpresaActiva || propEmpresaActiva;
   const isNivelEmpresa = nivelNavegacion === 'EMPRESA' && empresa;
+  const isDemoEmpresa = empresa?.esDemo || empresa?.id === 'emp-demo-sac' || empresa?.ruc === '20000000001';
+
+  const handleRestablecerDemo = async () => {
+    if (!confirm('¿Desea restablecer todos los datos de la Empresa Demo S.A.C.? Se volverán a cargar 20 compras, 15 ventas, planillas y el balance cuadrado.')) {
+      return;
+    }
+    setRestableciendoDemo(true);
+    try {
+      const token = localStorage.getItem('sunaconta_jwt_token');
+      const res = await fetch('/api/empresas/demo/restablecer', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        }
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Error restableciendo empresa demo');
+      }
+      success('Empresa Demo S.A.C. restablecida con balance cuadrado y 100% de operaciones.');
+      window.location.reload();
+    } catch (err: any) {
+      toastError(err.message || 'Error al restablecer la empresa demo');
+    } finally {
+      setRestableciendoDemo(false);
+    }
+  };
 
   return (
     <header className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 select-none z-40 text-xs shadow-xs relative">
@@ -90,7 +128,24 @@ export const TitleBar: React.FC<TitleBarProps> = ({
               <span className="font-mono text-[11px] font-bold text-slate-500 bg-white px-1.5 py-0.5 rounded border border-slate-200 shrink-0">
                 RUC {empresa.ruc}
               </span>
+              {isDemoEmpresa && (
+                <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300 font-extrabold text-[10px] shrink-0">
+                  DEMO S.A.C.
+                </span>
+              )}
             </div>
+
+            {isDemoEmpresa && (
+              <button
+                onClick={handleRestablecerDemo}
+                disabled={restableciendoDemo}
+                className="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-xs border border-amber-200 flex items-center gap-1.5 shadow-xs transition cursor-pointer disabled:opacity-50"
+                title="Restablecer datos demo con balance cuadrado"
+              >
+                <RotateCcw className={`w-3.5 h-3.5 text-amber-700 ${restableciendoDemo ? 'animate-spin' : ''}`} />
+                <span>{restableciendoDemo ? 'Restableciendo...' : 'Restablecer Demo'}</span>
+              </button>
+            )}
           </div>
         ) : (
           /* Nivel 1: Estudio Contable Banner */
@@ -169,6 +224,28 @@ export const TitleBar: React.FC<TitleBarProps> = ({
           </button>
           <BackgroundJobsPanel isOpen={isJobsOpen} onClose={() => setIsJobsOpen(false)} />
         </div>
+
+        {/* Importación CSV/Excel */}
+        {isNivelEmpresa && onOpenImport && (
+          <button
+            onClick={onOpenImport}
+            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
+            title="Importar Catálogos y Apertura CSV / Excel"
+          >
+            <Upload className="w-4 h-4 text-slate-600" />
+          </button>
+        )}
+
+        {/* Respaldo ZIP Cifrado */}
+        {isNivelEmpresa && onOpenBackup && (
+          <button
+            onClick={onOpenBackup}
+            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
+            title="Copia de Seguridad y Restauración SISCONT (.ZIP AES-256)"
+          >
+            <Archive className="w-4 h-4 text-slate-600" />
+          </button>
+        )}
 
         {/* PDF Export Modal Trigger if on Nivel 2 */}
         {isNivelEmpresa && onOpenPdfExport && (

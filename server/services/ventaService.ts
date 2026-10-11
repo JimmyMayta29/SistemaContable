@@ -78,6 +78,7 @@ export interface VentaModel {
 }
 
 export const VENTAS_MEMORIA: VentaModel[] = [];
+export type CuentaPorCobrarModel = any;
 export const CXC_MEMORIA: any[] = [];
 const VENTA_LOCKS = new Set<string>();
 

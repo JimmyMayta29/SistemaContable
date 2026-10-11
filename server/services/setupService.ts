@@ -196,12 +196,6 @@ export const setupService = {
     return {
       mensaje: 'Estudio contable configurado exitosamente.',
       estudio: ESTUDIO_CONFIGURADO,
-      usuario: {
-        id: nuevoAdmin.id,
-        nombre: nuevoAdmin.nombre,
-        email: nuevoAdmin.email,
-        rolGlobal: nuevoAdmin.rolGlobal
-      },
       ...loginResultado
     };
   }

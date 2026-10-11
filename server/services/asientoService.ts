@@ -42,6 +42,29 @@ export interface AsientoFiltros {
   limit?: number;
 }
 
+export type AsientoDetalleModel = DetalleInput & {
+  id?: string;
+  asientoId?: string;
+  cuentaCodigo?: string;
+  cuentaNombre?: string;
+};
+
+export type AsientoContableModel = AsientoInput & {
+  id: string;
+  empresaId: string;
+  subdiarioId: string;
+  numero: string;
+  fecha: string;
+  glosa: string;
+  totalDebe: number;
+  totalHaber: number;
+  estado: 'BORRADOR' | 'CONTABILIZADO' | 'ANULADO';
+  items: any[];
+  createdAt: string;
+  updatedAt?: string;
+  tipoAsiento?: string;
+};
+
 // Almacén en memoria sincronizado para alta disponibilidad
 export const ASIENTOS_MEMORIA: any[] = [];
 const CORRELATIVOS_MEMORIA = new Map<string, number>();

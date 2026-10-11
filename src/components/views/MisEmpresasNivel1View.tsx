@@ -18,11 +18,18 @@ import {
   Sparkles,
   ArrowRight,
   Filter,
-  Check
+  Check,
+  Upload,
+  Archive,
+  RotateCcw
 } from 'lucide-react';
 import { EmpresaCliente } from '../../types';
 import { useEmpresaPeriodo } from '../../context/EmpresaPeriodoContext';
 import { useToast } from '../../context/ToastContext';
+import { ModalNuevaEmpresaBlanco } from '../modals/ModalNuevaEmpresaBlanco';
+import { ModalImportacionCsv } from '../modals/ModalImportacionCsv';
+import { ModalBackupEmpresa } from '../modals/ModalBackupEmpresa';
+import { EmptyStateInstructivo } from '../common/EmptyStateInstructivo';
 
 interface MisEmpresasNivel1ViewProps {
   empresas: EmpresaCliente[];
@@ -34,21 +41,49 @@ export const MisEmpresasNivel1View: React.FC<MisEmpresasNivel1ViewProps> = ({
   onAddEmpresa
 }) => {
   const { entrarAEmpresa, usuario, setIsSearchModalOpen } = useEmpresaPeriodo();
-  const { success } = useToast();
+  const { success, error: toastError } = useToast();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filtroEstado, setFiltroEstado] = useState<'TODOS' | 'POR_VENCER' | 'PRELIQUIDADO' | 'AL_DIA'>('TODOS');
   const [filtroRegimen, setFiltroRegimen] = useState<string>('TODOS');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalBlancoOpen, setIsModalBlancoOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
   const [selectedParaRecordatorio, setSelectedParaRecordatorio] = useState<EmpresaCliente | null>(null);
+  const [restableciendoDemo, setRestableciendoDemo] = useState(false);
 
-  // Formulario nueva empresa
+  // Formulario nueva empresa básica
   const [newRuc, setNewRuc] = useState('');
   const [newRazonSocial, setNewRazonSocial] = useState('');
   const [newContacto, setNewContacto] = useState('');
   const [newTelefono, setNewTelefono] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newRegimen, setNewRegimen] = useState<'MYPE_TRIBUTARIO' | 'REGIMEN_GENERAL' | 'REGIMEN_ESPECIAL'>('MYPE_TRIBUTARIO');
+
+  const handleRestablecerDemo = async () => {
+    setRestableciendoDemo(true);
+    try {
+      const token = localStorage.getItem('sunaconta_jwt_token');
+      const res = await fetch('/api/empresas/demo/restablecer', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        }
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Error restableciendo empresa demo');
+      }
+      success('Empresa Demo S.A.C. restablecida con balance cuadrado y 100% de operaciones.');
+      window.location.reload();
+    } catch (err: any) {
+      toastError(err.message || 'Error al restablecer la empresa demo.');
+    } finally {
+      setRestableciendoDemo(false);
+    }
+  };
 
   // Cálculos reales para el Tablero de Cartera
   const statsCartera = useMemo(() => {
@@ -154,22 +189,48 @@ export const MisEmpresasNivel1View: React.FC<MisEmpresasNivel1ViewProps> = ({
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
             <button
               onClick={() => setIsSearchModalOpen(true)}
-              className="px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs border border-white/20 backdrop-blur-sm flex items-center gap-2 transition cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs border border-white/20 backdrop-blur-sm flex items-center gap-1.5 transition cursor-pointer"
             >
-              <Search className="w-4 h-4 text-blue-300" />
-              <span>Buscar Empresa</span>
+              <Search className="w-3.5 h-3.5 text-blue-300" />
+              <span>Buscar</span>
               <kbd className="px-1.5 py-0.5 bg-white/20 rounded text-[10px] font-mono">Ctrl+K</kbd>
             </button>
 
             <button
-              onClick={() => setIsModalOpen(true)}
-              className="px-5 py-2.5 rounded-2xl bg-blue-500 hover:bg-blue-400 text-slate-950 font-extrabold text-xs shadow-lg shadow-blue-500/25 flex items-center gap-2 transition cursor-pointer"
+              onClick={() => setIsImportModalOpen(true)}
+              className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs border border-white/20 backdrop-blur-sm flex items-center gap-1.5 transition cursor-pointer"
+            >
+              <Upload className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Importar CSV</span>
+            </button>
+
+            <button
+              onClick={() => setIsBackupModalOpen(true)}
+              className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs border border-white/20 backdrop-blur-sm flex items-center gap-1.5 transition cursor-pointer"
+            >
+              <Archive className="w-3.5 h-3.5 text-amber-300" />
+              <span>Backups SISCONT</span>
+            </button>
+
+            <button
+              onClick={handleRestablecerDemo}
+              disabled={restableciendoDemo}
+              className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-sm"
+              title="Cargar o restaurar la Empresa Demo con operaciones completas y balance cuadrado"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{restableciendoDemo ? 'Restableciendo...' : 'Empresa Demo'}</span>
+            </button>
+
+            <button
+              onClick={() => setIsModalBlancoOpen(true)}
+              className="px-4 py-2 rounded-xl bg-blue-500 hover:bg-blue-400 text-slate-950 font-extrabold text-xs shadow-lg shadow-blue-500/25 flex items-center gap-1.5 transition cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              Registrar Nueva Empresa
+              <span>Nueva Empresa</span>
             </button>
           </div>
         </div>
@@ -267,100 +328,142 @@ export const MisEmpresasNivel1View: React.FC<MisEmpresasNivel1ViewProps> = ({
         </div>
       </div>
 
-      {/* Grid of Company Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {filteredEmpresas.map((empresa) => {
-          const ultimoDigito = empresa.ultimoDigitoRuc || empresa.ruc.slice(-1);
-          const fechaVencimiento = getVencimientoLabel(ultimoDigito);
+      {/* Grid of Company Cards or Empty State */}
+      {filteredEmpresas.length === 0 ? (
+        <EmptyStateInstructivo
+          moduloNombre="Cartera de Empresas"
+          titulo="No se encontraron empresas registradas"
+          descripcion="Puede registrar una nueva empresa cliente en blanco o inicializar la Empresa Demo con datos operacionales y balance cuadrado."
+          checklist={[
+            { titulo: 'Identificación de RUC y Razón Social', cumplido: false, descripcion: 'Validación automática bajo algoritmo Módulo 11 de SUNAT' },
+            { titulo: 'Asignación de Régimen Tributario', cumplido: false, descripcion: 'MYPE Tributario, Régimen General, Régimen Especial o NRUS' },
+            { titulo: 'Inicialización de Catálogos PCGE', cumplido: true, descripcion: 'Plan Contable General Empresarial 2019/2020 y Subdiarios SISCONT predefinidos' }
+          ]}
+          onRegistrarNuevo={() => setIsModalBlancoOpen(true)}
+          textoRegistrar="Registrar Empresa en Blanco"
+          onCargarPlantilla={handleRestablecerDemo}
+          textoPlantilla="Cargar Empresa Demo S.A.C."
+          onImportarCsv={() => setIsImportModalOpen(true)}
+          textoImportar="Importar desde CSV / Excel"
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {filteredEmpresas.map((empresa) => {
+            const ultimoDigito = empresa.ultimoDigitoRuc || empresa.ruc.slice(-1);
+            const fechaVencimiento = getVencimientoLabel(ultimoDigito);
+            const esDemo = empresa.ruc === '20000000001' || (empresa as any).esDemo;
 
-          return (
-            <div
-              key={empresa.id}
-              className="bg-white border border-slate-200 hover:border-blue-400 rounded-3xl p-5 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between group"
-            >
-              <div className="space-y-4">
-                {/* Header: Avatar, Name, RUC & Regime */}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-extrabold text-sm flex items-center justify-center shadow-sm shrink-0">
-                      {ultimoDigito}
-                    </div>
-                    <div>
-                      <h3 className="font-extrabold text-slate-900 text-sm leading-snug group-hover:text-blue-600 transition">
-                        {empresa.razonSocial}
-                      </h3>
-                      <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
-                        <span className="font-mono font-bold text-slate-700">RUC {empresa.ruc}</span>
-                        <span>•</span>
-                        <span className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded font-semibold text-slate-600">
-                          {empresa.regimenTributario.replace('_', ' ')}
-                        </span>
+            return (
+              <div
+                key={empresa.id}
+                className="bg-white border border-slate-200 hover:border-blue-400 rounded-3xl p-5 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between group"
+              >
+                <div className="space-y-4">
+                  {/* Header: Avatar, Name, RUC & Regime */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-extrabold text-sm flex items-center justify-center shadow-sm shrink-0">
+                        {ultimoDigito}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h3 className="font-extrabold text-slate-900 text-sm leading-snug group-hover:text-blue-600 transition">
+                            {empresa.razonSocial}
+                          </h3>
+                          {esDemo && (
+                            <span className="px-2 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 rounded-md text-[9px] font-black uppercase tracking-wider shrink-0">
+                              DEMO EDUCATIVA
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
+                          <span className="font-mono font-bold text-slate-700">RUC {empresa.ruc}</span>
+                          <span>•</span>
+                          <span className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded font-semibold text-slate-600">
+                            {empresa.regimenTributario.replace('_', ' ')}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
+
+                  {/* Deadlines & SUNAT Obligations */}
+                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-3 grid grid-cols-3 gap-2 text-center text-xs">
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">PDT 621</span>
+                      <span className="font-mono font-bold text-slate-800 text-[11px]">{empresa.vencimientoPdt621 || fechaVencimiento}</span>
+                      <span className="text-[9px] text-amber-600 block font-semibold mt-0.5">Pendiente</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">SIRE</span>
+                      <span className="font-mono font-bold text-slate-800 text-[11px]">{empresa.vencimientoSire || fechaVencimiento}</span>
+                      <span className="text-[9px] text-blue-600 block font-semibold mt-0.5">Propuesta</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">PLAME</span>
+                      <span className="font-mono font-bold text-slate-800 text-[11px]">{empresa.vencimientoPlame || fechaVencimiento}</span>
+                      <span className="text-[9px] text-emerald-600 block font-semibold mt-0.5">Al Día</span>
+                    </div>
+                  </div>
+
+                  {/* Preliquidación Summary */}
+                  <div className="bg-blue-50/60 border border-blue-100 rounded-2xl p-3 flex items-center justify-between text-xs">
+                    <div>
+                      <span className="text-[10px] font-bold text-blue-900 uppercase tracking-wider block">
+                        Tributos Proyectados Periodo:
+                      </span>
+                      <span className="font-mono font-extrabold text-blue-950 text-sm">
+                        S/ {((empresa.montoPreliquidacionIgv || 0) + (empresa.montoPreliquidacionRenta || 0)).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                      </span>
+                      <span className="text-[10px] text-slate-500 ml-1.5">
+                        (IGV S/ {empresa.montoPreliquidacionIgv || 0} + Rta S/ {empresa.montoPreliquidacionRenta || 0})
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => setSelectedParaRecordatorio(empresa)}
+                      className="p-2 rounded-xl bg-white hover:bg-blue-100 text-blue-700 border border-blue-200 transition cursor-pointer shadow-2xs"
+                      title="Notificar por WhatsApp / Correo"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
 
-                {/* Deadlines & SUNAT Obligations */}
-                <div className="bg-slate-50 border border-slate-100 rounded-2xl p-3 grid grid-cols-3 gap-2 text-center text-xs">
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">PDT 621</span>
-                    <span className="font-mono font-bold text-slate-800 text-[11px]">{empresa.vencimientoPdt621 || fechaVencimiento}</span>
-                    <span className="text-[9px] text-amber-600 block font-semibold mt-0.5">Pendiente</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">SIRE</span>
-                    <span className="font-mono font-bold text-slate-800 text-[11px]">{empresa.vencimientoSire || fechaVencimiento}</span>
-                    <span className="text-[9px] text-blue-600 block font-semibold mt-0.5">Propuesta</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">PLAME</span>
-                    <span className="font-mono font-bold text-slate-800 text-[11px]">{empresa.vencimientoPlame || fechaVencimiento}</span>
-                    <span className="text-[9px] text-emerald-600 block font-semibold mt-0.5">Al Día</span>
-                  </div>
-                </div>
-
-                {/* Preliquidación Summary */}
-                <div className="bg-blue-50/60 border border-blue-100 rounded-2xl p-3 flex items-center justify-between text-xs">
-                  <div>
-                    <span className="text-[10px] font-bold text-blue-900 uppercase tracking-wider block">
-                      Tributos Proyectados Periodo:
-                    </span>
-                    <span className="font-mono font-extrabold text-blue-950 text-sm">
-                      S/ {((empresa.montoPreliquidacionIgv || 0) + (empresa.montoPreliquidacionRenta || 0)).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
-                    </span>
-                    <span className="text-[10px] text-slate-500 ml-1.5">
-                      (IGV S/ {empresa.montoPreliquidacionIgv || 0} + Rta S/ {empresa.montoPreliquidacionRenta || 0})
-                    </span>
+                {/* Action Button: Entrar a la empresa */}
+                <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between gap-3">
+                  <div className="text-[11px] text-slate-500 truncate">
+                    Contacto: <strong className="text-slate-700">{empresa.contactoNombre || 'Gerencia'}</strong>
                   </div>
 
-                  <button
-                    onClick={() => setSelectedParaRecordatorio(empresa)}
-                    className="p-2 rounded-xl bg-white hover:bg-blue-100 text-blue-700 border border-blue-200 transition cursor-pointer shadow-2xs"
-                    title="Notificar por WhatsApp / Correo"
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    {esDemo && (
+                      <button
+                        type="button"
+                        onClick={handleRestablecerDemo}
+                        disabled={restableciendoDemo}
+                        className="px-2.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                        title="Restablecer datos originales de la demo"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        <span>Restablecer</span>
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => entrarAEmpresa(empresa)}
+                      className="px-4 py-2 rounded-xl bg-slate-900 group-hover:bg-blue-600 text-white font-extrabold text-xs flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+                    >
+                      <span>Ingresar</span>
+                      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                    </button>
+                  </div>
                 </div>
               </div>
-
-              {/* Action Button: Entrar a la empresa */}
-              <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between gap-3">
-                <div className="text-[11px] text-slate-500 truncate">
-                  Contacto: <strong className="text-slate-700">{empresa.contactoNombre || 'Gerencia'}</strong>
-                </div>
-
-                <button
-                  onClick={() => entrarAEmpresa(empresa)}
-                  className="px-4 py-2 rounded-xl bg-slate-900 group-hover:bg-blue-600 text-white font-extrabold text-xs flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
-                >
-                  <span>Ingresar</span>
-                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                </button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Modal: Enviar Aviso de Preliquidación */}
       {selectedParaRecordatorio && (
@@ -498,6 +601,29 @@ Mendoza & Asociados — Asesores Tributarios S.C.R.L.`}
           </div>
         </div>
       )}
+      {/* Modal: Registrar Empresa en Blanco (Asistente Completo) */}
+      <ModalNuevaEmpresaBlanco
+        isOpen={isModalBlancoOpen}
+        onClose={() => setIsModalBlancoOpen(false)}
+        onEmpresaCreada={(nueva) => {
+          onAddEmpresa(nueva);
+        }}
+      />
+
+      {/* Modal: Importación CSV/Excel */}
+      <ModalImportacionCsv
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImportExitoso={() => {
+          window.location.reload();
+        }}
+      />
+
+      {/* Modal: Copias de Seguridad por Empresa (SISCONT) */}
+      <ModalBackupEmpresa
+        isOpen={isBackupModalOpen}
+        onClose={() => setIsBackupModalOpen(false)}
+      />
     </div>
   );
 };
