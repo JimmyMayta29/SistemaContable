@@ -1,5 +1,7 @@
 # Motor Único de Reportes Formato ESTANDAR para SUNAConta PRO
 
+> Plan histórico de presentación. La adenda y el orden de corrección vigentes están en `docs/engineering/PLAN_IMPLEMENTACION.md`; prevalecen sus decisiones de almacenamiento, respaldo y verificación.
+
 Implementación de un motor modular de reportes contables con la estética y estructura formal de ESTANDAR (monocromo estricto en blanco y negro, tipografía ligera, cabeceras enmarcadas por grupos, totales con doble subrayado, y paginación centrada "Pag. N") tanto en previsualización de impresión, PDF y hoja de cálculo, respaldado por un interruptor de reversibilidad (`REPORT_STYLE`) y con entrega inicial del **Registro de Compras (RCE)**.
 
 ---

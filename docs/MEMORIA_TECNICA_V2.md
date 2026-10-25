@@ -1,4 +1,7 @@
 # MEMORIA TÉCNICA V2 Y REPORTE DE AUDITORÍA INTEGRAL DEL SISTEMA CONTABLE Y TRIBUTARIO
+
+> Documento histórico. El estado actual y los criterios de aceptación se rigen por el [plan de corrección y almacenamiento por empresa](engineering/PLAN_IMPLEMENTACION.md). Las certificaciones que figuran abajo no sustituyen las pruebas reales exigidas por ese plan.
+
 **Versión del Documento:** 2.0.0  
 **Fecha de Emisión:** 4 de Octubre de 2026  
 **Auditoría Técnica:** Post Fases 7 a 12, 7B y 7C/7C-2  
