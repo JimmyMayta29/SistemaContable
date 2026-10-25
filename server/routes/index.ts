@@ -8,6 +8,7 @@ import { tesoreriaPlanillaRoutes } from './tesoreriaPlanillaRoutes';
 import { sunatSirePleRoutes } from './sunatSirePleRoutes';
 import { tributarioAnualRoutes } from './tributarioAnualRoutes';
 import { activosKardexRoutes } from './activosKardexRoutes';
+import { sistemaAuditRoutes } from './sistemaAuditRoutes';
 import { authRoutes } from './authRoutes';
 import { setupRoutes } from './setupRoutes';
 import { importacionRoutes } from './importacionRoutes';
@@ -51,5 +52,6 @@ router.use('/', tesoreriaPlanillaRoutes);
 router.use('/', sunatSirePleRoutes);
 router.use('/', tributarioAnualRoutes);
 router.use('/', activosKardexRoutes);
+router.use('/', sistemaAuditRoutes);
 
 export const apiRoutes = router;

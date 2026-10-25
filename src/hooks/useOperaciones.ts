@@ -196,6 +196,17 @@ export function useCrearAnexo(empresaId: string) {
   });
 }
 
+export function useConsultarRuc(empresaId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ ruc, tipoEntidad, forzar }: { ruc: string; tipoEntidad?: 'PROVEEDOR' | 'CLIENTE' | 'AMBOS'; forzar?: boolean }) =>
+      operacionesApi.consultarRuc(empresaId, ruc, tipoEntidad, forzar),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['anexos', empresaId] });
+    }
+  });
+}
+
 // ----------------------------------------------------------------------------
 // DETRACCIONES SPOT
 // ----------------------------------------------------------------------------

@@ -8,6 +8,7 @@ import { detraccionService } from '../services/detraccionService';
 import { liquidacionIGVService } from '../services/liquidacionIGVService';
 import { contabilizacionService } from '../services/contabilizacionService';
 import { anexoService } from '../services/anexoService';
+import { SunatConsultaRucService } from '../services/sunatConsultaRucService';
 import { successResponse, errorResponse } from '../utils/response';
 
 // Esquemas de validación Zod
@@ -628,6 +629,29 @@ export const operacionesController = {
       return successResponse(res, liquidacion);
     } catch (err: any) {
       return errorResponse(res, err.message);
+    }
+  },
+
+  // --------------------------------------------------------------------------
+  // CONSULTA RUC SUNAT EN TIEMPO REAL (HÍBRIDO POSTGRESQL + API SUNAT)
+  // --------------------------------------------------------------------------
+  async consultarRucSunat(req: Request, res: Response) {
+    try {
+      const empresaId = req.params.id || req.empresaId!;
+      const { ruc } = req.params;
+      const tipoEntidad = (req.query.tipoEntidad as 'PROVEEDOR' | 'CLIENTE' | 'AMBOS') || 'PROVEEDOR';
+      const forzarActualizacion = req.query.forzar === 'true' || req.query.refresh === 'true';
+
+      const resultado = await SunatConsultaRucService.consultarRuc(
+        empresaId,
+        ruc,
+        tipoEntidad,
+        forzarActualizacion
+      );
+
+      return successResponse(res, resultado, 'RUC consultado y sincronizado con éxito');
+    } catch (err: any) {
+      return errorResponse(res, err.message, 400);
     }
   }
 };

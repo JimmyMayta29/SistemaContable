@@ -190,5 +190,45 @@ export const anexoService = {
     }
 
     return nuevo;
+  },
+
+  async actualizarOInsertar(empresaId: string, input: {
+    tipoDocumento: '6' | '1' | '4' | '7' | '0';
+    numeroDocumento: string;
+    razonSocial: string;
+    direccion?: string;
+    tipoEntidad: 'CLIENTE' | 'PROVEEDOR' | 'EMPLEADO' | 'AMBOS';
+    condicionSunat?: 'HABIDO' | 'NO_HABIDO';
+    estadoSunat?: 'ACTIVO' | 'SUSPENDIDO' | 'BAJA';
+  }): Promise<AnexoModel> {
+    const existente = await this.obtenerPorDocumento(empresaId, input.numeroDocumento);
+    if (existente) {
+      existente.razonSocial = input.razonSocial.trim().toUpperCase();
+      if (input.direccion) existente.direccion = input.direccion;
+      if (input.condicionSunat) existente.condicionSunat = input.condicionSunat;
+      if (input.estadoSunat) existente.estadoSunat = input.estadoSunat;
+      if (existente.tipoEntidad !== input.tipoEntidad && existente.tipoEntidad !== 'AMBOS') {
+        existente.tipoEntidad = 'AMBOS';
+      }
+
+      if (db.isPostgresConnected()) {
+        await db.query(`
+          UPDATE anexos 
+          SET razon_social = $1, direccion = $2, condicion_sunat = $3, estado_sunat = $4, tipo_entidad = $5
+          WHERE empresa_id = $6 AND id = $7
+        `, [
+          existente.razonSocial, existente.direccion || '', existente.condicionSunat, 
+          existente.estadoSunat, existente.tipoEntidad, empresaId, existente.id
+        ]);
+      } else {
+        const idx = ANEXOS_MEMORIA.findIndex(a => a.id === existente.id);
+        if (idx >= 0) {
+          ANEXOS_MEMORIA[idx] = { ...existente };
+        }
+      }
+      return existente;
+    }
+
+    return this.crear(empresaId, input);
   }
 };

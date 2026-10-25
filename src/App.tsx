@@ -76,6 +76,7 @@ import { AuditoriaView } from './components/views/AuditoriaView';
 import { CarteraSaldosView } from './components/views/CarteraSaldosView';
 import { ActivosKardexView } from './components/views/ActivosKardexView';
 import { UsuariosPermisosView } from './components/views/UsuariosPermisosView';
+import { MapaAuditoriaSistemaView } from './components/views/MapaAuditoriaSistemaView';
 import { AsistenteSetupInicial } from './components/setup/AsistenteSetupInicial';
 
 function AppContent({
@@ -589,6 +590,10 @@ function AppContent({
                   onGenerarDestinos={handleGenerarAsientosMasivos}
                   onGenerarAjusteTc={handleAddAsiento}
                 />
+              )}
+
+              {activeTab === 'mapa_sistema' && empresaActiva && (
+                <MapaAuditoriaSistemaView empresa={empresaActiva} />
               )}
 
               {activeTab === 'maestros' && (

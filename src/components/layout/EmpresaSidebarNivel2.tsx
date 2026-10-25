@@ -23,7 +23,8 @@ import {
   Lock, 
   ChevronDown, 
   ChevronRight,
-  UserCheck
+  UserCheck,
+  Network
 } from 'lucide-react';
 import { useEmpresaPeriodo, RolEmpresa } from '../../context/EmpresaPeriodoContext';
 import { Comprobante, AsientoContable, MovimientoCajaBanco, ReciboHonorario } from '../../types';
@@ -47,6 +48,7 @@ export type TabIdNivel2 =
   | 'pdt621'
   | 'reportes'
   | 'cierre'
+  | 'mapa_sistema'
   | 'config_empresa'
   | 'maestros'
   | 'reglas'
@@ -401,8 +403,8 @@ export const EmpresaSidebarNivel2: React.FC<EmpresaSidebarNivel2Props> = ({
           </button>
         </div>
 
-        {/* 6. CIERRE */}
-        <div className="pt-1">
+        {/* 6. CIERRE & AUDITORÍA */}
+        <div className="pt-1 space-y-0.5">
           <button
             onClick={() => onSelectTab('cierre')}
             className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
@@ -411,8 +413,25 @@ export const EmpresaSidebarNivel2: React.FC<EmpresaSidebarNivel2Props> = ({
           >
             <div className="flex items-center gap-2">
               <Cpu className="w-4 h-4 text-slate-600" />
-              <span>Cierre & Auditoría</span>
+              <span>Cierre & Balances</span>
             </div>
+          </button>
+
+          <button
+            onClick={() => onSelectTab('mapa_sistema')}
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+              activeTab === 'mapa_sistema' ? 'bg-indigo-600 text-white shadow-xs' : 'text-indigo-900 bg-indigo-50/70 hover:bg-indigo-100/70 border border-indigo-100'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Network className="w-4 h-4 text-indigo-500" />
+              <span>Mapa & Auditoría</span>
+            </div>
+            <span className={`text-[10px] font-extrabold px-1.5 py-0.2 rounded-full ${
+              activeTab === 'mapa_sistema' ? 'bg-white/20 text-white' : 'bg-indigo-200 text-indigo-800'
+            }`}>
+              Audit
+            </span>
           </button>
         </div>
 

@@ -90,4 +90,9 @@ router.post('/detracciones/:id/deposito', validateBody(depositoDetraccionSchema)
 // --------------------------------------------------------------------------
 router.get('/empresas/:id/liquidacion-igv', requireEmpresaMembership(), operacionesController.liquidarIGV);
 
+// --------------------------------------------------------------------------
+// CONSULTA RUC EN TIEMPO REAL SUNAT (HÍBRIDO POSTGRESQL + SUNAT)
+// --------------------------------------------------------------------------
+router.get('/empresas/:id/sunat/consulta-ruc/:ruc', requireEmpresaMembership(), operacionesController.consultarRucSunat);
+
 export const operacionesRoutes = router;

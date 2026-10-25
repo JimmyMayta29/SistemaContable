@@ -17,14 +17,31 @@ import {
   ArrowRight,
   Eye,
   RefreshCw,
-  Coins
+  Coins,
+  Building2,
+  ShieldCheck,
+  ShieldAlert,
+  Info,
+  Loader2
 } from 'lucide-react';
 import { Comprobante, EmpresaCliente } from '../../types';
-import { useComprasList, useRegistroComprasLibro, useCrearCompra, useAnularCompra, useDuplicarCompra, useAnexosList, useCrearAnexo } from '../../hooks/useOperaciones';
+import { 
+  useComprasList, 
+  useRegistroComprasLibro, 
+  useCrearCompra, 
+  useAnularCompra, 
+  useDuplicarCompra, 
+  useAnexosList, 
+  useCrearAnexo,
+  useConsultarRuc 
+} from '../../hooks/useOperaciones';
 import { operacionesApi } from '../../api/operacionesApi';
 import { generarSireRceTxt, exportarComprobantesCsv } from '../../services/sireTxtGenerator';
 import { exportarRegistroComprasPdf } from '../../services/pdfExportService';
 import { VisorDocumentoSunatModal } from '../modals/VisorDocumentoSunatModal';
+import { useReportStyle } from '../../context/ReportStyleContext';
+import { construirDefinicionRegistroComprasSiscont } from '../../services/reports/siscontFormatEngine';
+import { VisorReporteSiscontModal } from '../modals/VisorReporteSiscontModal';
 import { useToast } from '../../context/ToastContext';
 import { EmptyStateInstructivo } from '../common/EmptyStateInstructivo';
 
@@ -43,6 +60,8 @@ export const RegistroComprasView: React.FC<RegistroComprasViewProps> = ({
   onGenerarAsientos
 }) => {
   const { success, error } = useToast();
+  const { reportStyle } = useReportStyle();
+  const [modalSiscontOpen, setModalSiscontOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'LIBRO' | 'DIGITACION'>('LIBRO');
   const [searchTerm, setSearchTerm] = useState('');
   const [filtroTipo, setFiltroTipo] = useState<string>('TODOS');
@@ -75,6 +94,13 @@ export const RegistroComprasView: React.FC<RegistroComprasViewProps> = ({
   const anularCompraMutation = useAnularCompra(empresa.id);
   const duplicarCompraMutation = useDuplicarCompra(empresa.id);
   const crearAnexoMutation = useCrearAnexo(empresa.id);
+  const consultarRucMutation = useConsultarRuc(empresa.id);
+
+  // Estados de Consulta RUC en Tiempo Real (SUNAT + Caché PostgreSQL)
+  const [rucBusquedaDirecta, setRucBusquedaDirecta] = useState('');
+  const [resultadoConsultaRuc, setResultadoConsultaRuc] = useState<any | null>(null);
+  const [errorConsultaRuc, setErrorConsultaRuc] = useState<string | null>(null);
+  const [consultandoModalRuc, setConsultandoModalRuc] = useState(false);
 
   // Formulario Digitación Rápida (Teclado Primero)
   const [formTipo, setFormTipo] = useState<'01' | '03' | '07' | '08'>('01');
@@ -243,6 +269,67 @@ export const RegistroComprasView: React.FC<RegistroComprasViewProps> = ({
     }
   };
 
+  const handleConsultarRucEnRegistro = async (forzar = false) => {
+    const ruc = rucBusquedaDirecta.trim().replace(/\D/g, '');
+    if (!ruc) {
+      setErrorConsultaRuc('Ingrese un RUC de 11 dígitos');
+      return;
+    }
+    if (ruc.length !== 11) {
+      setErrorConsultaRuc('El RUC debe tener exactamente 11 dígitos');
+      return;
+    }
+
+    setErrorConsultaRuc(null);
+    try {
+      const res = await consultarRucMutation.mutateAsync({ ruc, tipoEntidad: 'PROVEEDOR', forzar });
+      setResultadoConsultaRuc(res);
+      if (res.anexoId) {
+        setFormProveedorId(res.anexoId);
+      }
+      if (res.condicion === 'NO_HABIDO') {
+        error(
+          'El proveedor figura como NO HABIDO en SUNAT. Según Art. 65-A TUO IGV y Art. 44 TUO LIR, no permite deducir crédito fiscal.',
+          'Alerta Tributaria SUNAT'
+        );
+      } else if (res.estado !== 'ACTIVO') {
+        error(
+          `El proveedor figura en estado ${res.estado} en SUNAT. Los comprobantes carecen de validez fiscal durante baja o suspensión.`,
+          'Alerta Tributaria SUNAT'
+        );
+      } else {
+        success(
+          `${res.razonSocial} (${res.origen === 'CACHE_LOCAL' ? 'Caché PostgreSQL' : 'SUNAT en Vivo'})`,
+          'RUC Verificado'
+        );
+      }
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err.message || 'Error al consultar RUC';
+      setErrorConsultaRuc(msg);
+      error(msg, 'Error Consulta RUC');
+    }
+  };
+
+  const handleConsultarRucEnModal = async () => {
+    const ruc = nuevoProvRuc.trim().replace(/\D/g, '');
+    if (ruc.length !== 11) {
+      error('El RUC debe contener exactamente 11 dígitos', 'RUC Incompleto');
+      return;
+    }
+    setConsultandoModalRuc(true);
+    try {
+      const res = await consultarRucMutation.mutateAsync({ ruc, tipoEntidad: 'PROVEEDOR' });
+      setNuevoProvRazon(res.razonSocial);
+      setNuevoProvDireccion(res.direccion || '');
+      setNuevoProvCondicion(res.condicion || 'HABIDO');
+      success(`Datos SUNAT cargados: ${res.razonSocial}`, 'Consulta Exitosa');
+    } catch (err: any) {
+      error(err?.response?.data?.message || err.message || 'Error consultando SUNAT', 'Fallo de Consulta');
+    } finally {
+      setConsultandoModalRuc(false);
+    }
+  };
+
   const handleConfirmarAnular = async () => {
     if (!modalAnular.id || !modalAnular.motivo) return;
     try {
@@ -328,12 +415,18 @@ export const RegistroComprasView: React.FC<RegistroComprasViewProps> = ({
           </div>
 
           <button
-            onClick={() => exportarRegistroComprasPdf(empresa, legacyCompras, periodo)}
-            className="px-3 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
-            title="Exportar Libro PDF Oficial"
+            onClick={() => {
+              if (reportStyle === 'siscont') {
+                setModalSiscontOpen(true);
+              } else {
+                exportarRegistroComprasPdf(empresa, legacyCompras, periodo);
+              }
+            }}
+            className="px-3 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-xs"
+            title={reportStyle === 'siscont' ? 'Previsualizar y Exportar en Formato Oficial SISCONT (B/N)' : 'Exportar Libro PDF Oficial'}
           >
-            <FileText className="w-4 h-4 text-blue-600" />
-            PDF (8.4)
+            <FileText className={`w-4 h-4 ${reportStyle === 'siscont' ? 'text-black' : 'text-blue-600'}`} />
+            <span>{reportStyle === 'siscont' ? 'Reporte SISCONT' : 'PDF (8.4)'}</span>
           </button>
         </div>
       </div>
@@ -468,52 +561,196 @@ export const RegistroComprasView: React.FC<RegistroComprasViewProps> = ({
               </div>
             </div>
 
-            {/* Proveedor selector with Alta Rápida */}
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+            {/* Proveedor selector with Validación SUNAT en Tiempo Real */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
               <div className="flex items-center justify-between">
-                <label className="text-[11px] font-bold text-slate-700">Proveedor (RUC / Razón Social)</label>
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-blue-600" />
+                  <label className="text-xs font-bold text-slate-800">
+                    Proveedor y Validación SUNAT en Tiempo Real
+                  </label>
+                </div>
                 <button
                   type="button"
                   onClick={() => setModalAltaProveedor(true)}
                   className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 cursor-pointer"
                 >
-                  <Plus className="w-3.5 h-3.5" /> + Alta Rápida Proveedor
+                  <Plus className="w-3.5 h-3.5" /> + Alta Rápida
                 </button>
               </div>
 
-              <select
-                value={formProveedorId}
-                onChange={(e) => setFormProveedorId(e.target.value)}
-                className="w-full text-xs font-semibold p-2.5 border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none"
-              >
-                <option value="">-- Seleccione un proveedor registrado --</option>
-                {anexosList.map((a: any) => (
-                  <option key={a.id} value={a.id}>
-                    {a.numeroDocumento} - {a.razonSocial} {a.condicionSunat === 'NO_HABIDO' ? '⚠️ (NO HABIDO)' : ''}
-                  </option>
-                ))}
-              </select>
+              {/* Barra de Consulta RUC en Vivo */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    maxLength={11}
+                    value={rucBusquedaDirecta}
+                    onChange={(e) => {
+                      setRucBusquedaDirecta(e.target.value.replace(/\D/g, ''));
+                      if (errorConsultaRuc) setErrorConsultaRuc(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleConsultarRucEnRegistro();
+                      }
+                    }}
+                    placeholder="Consultar RUC (11 dígitos, ej. 20100070970)..."
+                    className="w-full text-xs font-mono font-bold pl-3 pr-20 py-2.5 border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono font-semibold text-slate-400">
+                    {rucBusquedaDirecta.length}/11
+                  </span>
+                </div>
 
-              {proveedorSeleccionado && (
-                <div className="flex items-center justify-between text-xs px-2 pt-1 border-t border-slate-200">
-                  <span className="text-slate-600 truncate max-w-sm">{proveedorSeleccionado.direccion || 'Sin dirección registrada'}</span>
-                  <div className="flex items-center gap-2">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                      proveedorSeleccionado.condicionSunat === 'HABIDO' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800 font-extrabold'
-                    }`}>
-                      {proveedorSeleccionado.condicionSunat}
-                    </span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">
-                      {proveedorSeleccionado.estadoSunat}
-                    </span>
-                  </div>
+                <button
+                  type="button"
+                  onClick={() => handleConsultarRucEnRegistro(false)}
+                  disabled={consultarRucMutation.isPending || rucBusquedaDirecta.length !== 11}
+                  className={`px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-xs cursor-pointer ${
+                    consultarRucMutation.isPending || rucBusquedaDirecta.length !== 11
+                      ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                      : 'bg-blue-600 hover:bg-blue-700 text-white active:scale-95'
+                  }`}
+                  title="Verificar estado del contribuyente en SUNAT y caché local"
+                >
+                  {consultarRucMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Verificando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      <span>Consultar SUNAT</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {errorConsultaRuc && (
+                <div className="p-2 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-[11px] font-semibold flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                  <span>{errorConsultaRuc}</span>
                 </div>
               )}
 
-              {proveedorSeleccionado?.condicionSunat === 'NO_HABIDO' && (
-                <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-900 text-xs font-semibold flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                  <span>ADVERTENCIA: Proveedor NO HABIDO. Según el Art. 65-A del TUO del IGV, no permite deducir crédito fiscal salvo subsanación.</span>
+              {/* Selector de lista de proveedores guardados */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                  O seleccionar de catálogo registrado:
+                </label>
+                <select
+                  value={formProveedorId}
+                  onChange={(e) => {
+                    setFormProveedorId(e.target.value);
+                    const p = anexosList.find((a: any) => a.id === e.target.value);
+                    if (p) {
+                      setRucBusquedaDirecta(p.numeroDocumento);
+                      setResultadoConsultaRuc(null);
+                    }
+                  }}
+                  className="w-full text-xs font-semibold p-2 border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option value="">-- Seleccionar proveedor del catálogo --</option>
+                  {anexosList.map((a: any) => (
+                    <option key={a.id} value={a.id}>
+                      {a.numeroDocumento} - {a.razonSocial} {a.condicionSunat === 'NO_HABIDO' ? '⚠️ (NO HABIDO)' : ''} ({a.estadoSunat})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Ficha de Estado Tributario del Proveedor Seleccionado */}
+              {(proveedorSeleccionado || resultadoConsultaRuc) && (
+                <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-2 text-xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                    <div>
+                      <div className="font-mono font-bold text-slate-900 text-xs">
+                        RUC: {proveedorSeleccionado?.numeroDocumento || resultadoConsultaRuc?.ruc}
+                      </div>
+                      <div className="font-bold text-slate-800 text-xs mt-0.5">
+                        {proveedorSeleccionado?.razonSocial || resultadoConsultaRuc?.razonSocial}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {/* Badge Estado SUNAT */}
+                      {(() => {
+                        const estado = proveedorSeleccionado?.estadoSunat || resultadoConsultaRuc?.estado;
+                        const esActivo = estado === 'ACTIVO';
+                        return (
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-1 ${
+                            esActivo 
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' 
+                              : 'bg-rose-100 text-rose-800 border border-rose-300'
+                          }`}>
+                            {esActivo ? <ShieldCheck className="w-3 h-3 text-emerald-600" /> : <ShieldAlert className="w-3 h-3 text-rose-600" />}
+                            {estado}
+                          </span>
+                        );
+                      })()}
+
+                      {/* Badge Condición SUNAT */}
+                      {(() => {
+                        const condicion = proveedorSeleccionado?.condicionSunat || resultadoConsultaRuc?.condicion;
+                        const esHabido = condicion === 'HABIDO';
+                        return (
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-1 ${
+                            esHabido 
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' 
+                              : 'bg-amber-100 text-amber-800 border border-amber-300 animate-pulse'
+                          }`}>
+                            {esHabido ? 'HABIDO' : '⚠️ NO HABIDO'}
+                          </span>
+                        );
+                      })()}
+
+                      {/* Origen de los datos */}
+                      {resultadoConsultaRuc?.origen && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-slate-100 text-slate-600">
+                          {resultadoConsultaRuc.origen === 'CACHE_LOCAL' ? '⚡ Caché DB' : '🌐 SUNAT Online'}
+                        </span>
+                      )}
+
+                      {/* Botón Revalidar en Vivo */}
+                      <button
+                        type="button"
+                        onClick={() => handleConsultarRucEnRegistro(true)}
+                        disabled={consultarRucMutation.isPending}
+                        className="px-2 py-1 text-[10px] font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg flex items-center gap-1 cursor-pointer transition"
+                        title="Forzar actualización en tiempo real desde SUNAT"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${consultarRucMutation.isPending ? 'animate-spin' : ''}`} />
+                        <span>Revalidar</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="text-[11px] text-slate-500">
+                    <span className="font-semibold text-slate-700">Dirección Fiscal: </span>
+                    {proveedorSeleccionado?.direccion || resultadoConsultaRuc?.direccion || 'Sin dirección registrada en padrón'}
+                  </div>
+
+                  {/* Alerta de Contingencia Tributaria (No Bloqueante) */}
+                  {((proveedorSeleccionado?.condicionSunat === 'NO_HABIDO' || resultadoConsultaRuc?.condicion === 'NO_HABIDO') ||
+                    (proveedorSeleccionado?.estadoSunat && proveedorSeleccionado?.estadoSunat !== 'ACTIVO') ||
+                    (resultadoConsultaRuc?.estado && resultadoConsultaRuc?.estado !== 'ACTIVO')) && (
+                    <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs space-y-1">
+                      <div className="font-bold flex items-center gap-1.5 text-amber-950">
+                        <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                        <span>Contingencia Tributaria SUNAT (Art. 65-A TUO IGV / Art. 44 TUO LIR)</span>
+                      </div>
+                      <p className="text-[11px] leading-relaxed text-amber-900">
+                        {resultadoConsultaRuc?.advertenciaFiscal || 
+                          'Este proveedor figura como NO HABIDO o NO ACTIVO. El comprobante no otorgará derecho a crédito fiscal ni a deducción de gasto de renta, a menos que regularice su condición de domicilio fiscal antes del vencimiento del periodo.'}
+                      </p>
+                      <div className="text-[10px] text-amber-800 font-semibold italic">
+                        ℹ️ El sistema permite continuar el registro para efectos de control contable interno y cuentas por pagar.
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -904,14 +1141,39 @@ export const RegistroComprasView: React.FC<RegistroComprasViewProps> = ({
             <div className="space-y-3">
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1">RUC (11 dígitos)</label>
-                <input
-                  type="text"
-                  maxLength={11}
-                  value={nuevoProvRuc}
-                  onChange={(e) => setNuevoProvRuc(e.target.value.replace(/\D/g, ''))}
-                  placeholder="20XXXXXXXXX"
-                  className="w-full text-xs font-mono font-bold p-2 border border-slate-300 rounded-xl"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    maxLength={11}
+                    value={nuevoProvRuc}
+                    onChange={(e) => setNuevoProvRuc(e.target.value.replace(/\D/g, ''))}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleConsultarRucEnModal();
+                      }
+                    }}
+                    placeholder="20XXXXXXXXX"
+                    className="flex-1 text-xs font-mono font-bold p-2 border border-slate-300 rounded-xl"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleConsultarRucEnModal}
+                    disabled={consultandoModalRuc || nuevoProvRuc.length !== 11}
+                    className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
+                      consultandoModalRuc || nuevoProvRuc.length !== 11
+                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer shadow-xs'
+                    }`}
+                  >
+                    {consultandoModalRuc ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                    )}
+                    <span>Consultar</span>
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1">Razón Social</label>
@@ -999,6 +1261,16 @@ export const RegistroComprasView: React.FC<RegistroComprasViewProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal Visor y Exportador SISCONT (Formato Oficial B/N) */}
+      {modalSiscontOpen && (
+        <VisorReporteSiscontModal
+          isOpen={modalSiscontOpen}
+          onClose={() => setModalSiscontOpen(false)}
+          definicion={construirDefinicionRegistroComprasSiscont(empresa, itemsCompras, periodo)}
+          onExportarLegacyPdf={() => exportarRegistroComprasPdf(empresa, legacyCompras, periodo)}
+        />
       )}
     </div>
   );

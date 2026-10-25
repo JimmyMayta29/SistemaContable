@@ -197,6 +197,13 @@ export const operacionesApi = {
     return res.data;
   },
 
+  async consultarRuc(empresaId: string, ruc: string, tipoEntidad: 'PROVEEDOR' | 'CLIENTE' | 'AMBOS' = 'PROVEEDOR', forzar = false) {
+    const res: any = await apiClient.get(`/empresas/${empresaId}/sunat/consulta-ruc/${ruc}`, {
+      params: { tipoEntidad, forzar }
+    });
+    return res.data;
+  },
+
   // --------------------------------------------------------------------------
   // DETRACCIONES SPOT
   // --------------------------------------------------------------------------

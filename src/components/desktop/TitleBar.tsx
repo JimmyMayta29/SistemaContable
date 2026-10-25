@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { EmpresaCliente } from '../../types';
 import { useEmpresaPeriodo, RolEmpresa } from '../../context/EmpresaPeriodoContext';
+import { useReportStyle } from '../../context/ReportStyleContext';
 import { useToast } from '../../context/ToastContext';
 import { BackgroundJobsPanel } from './BackgroundJobsPanel';
 
@@ -57,6 +58,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [restableciendoDemo, setRestableciendoDemo] = useState(false);
   const { success, error: toastError } = useToast();
+  const { reportStyle, setReportStyle } = useReportStyle();
 
   const empresa = contextEmpresaActiva || propEmpresaActiva;
   const isNivelEmpresa = nivelNavegacion === 'EMPRESA' && empresa;
@@ -257,6 +259,32 @@ export const TitleBar: React.FC<TitleBarProps> = ({
             <FileText className="w-4 h-4 text-slate-600" />
           </button>
         )}
+
+        {/* Switch Formato de Reportes (SISCONT vs Actual) */}
+        <div className="flex items-center bg-slate-100 rounded-xl border border-slate-200 p-0.5 text-[11px] font-bold shadow-xs">
+          <button
+            onClick={() => setReportStyle('siscont')}
+            className={`px-2 py-1 rounded-lg transition cursor-pointer ${
+              reportStyle === 'siscont'
+                ? 'bg-black text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+            title="Formato SISCONT oficial en blanco y negro"
+          >
+            SISCONT
+          </button>
+          <button
+            onClick={() => setReportStyle('actual')}
+            className={`px-2 py-1 rounded-lg transition cursor-pointer ${
+              reportStyle === 'actual'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+            title="Formato actual estándar"
+          >
+            Actual
+          </button>
+        </div>
 
         {/* User Profile & Demo RBAC Role Switcher */}
         <div className="relative">

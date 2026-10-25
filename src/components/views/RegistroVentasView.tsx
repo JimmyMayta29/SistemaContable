@@ -10,10 +10,23 @@ import {
   Ban,
   Keyboard,
   RefreshCw,
-  Sparkles
+  Sparkles,
+  Building2,
+  ShieldCheck,
+  ShieldAlert,
+  Loader2
 } from 'lucide-react';
 import { Comprobante, EmpresaCliente } from '../../types';
-import { useVentasList, useRegistroVentasLibro, useCrearVenta, useAnularVenta, useDuplicarVenta, useAnexosList, useCrearAnexo } from '../../hooks/useOperaciones';
+import { 
+  useVentasList, 
+  useRegistroVentasLibro, 
+  useCrearVenta, 
+  useAnularVenta, 
+  useDuplicarVenta, 
+  useAnexosList, 
+  useCrearAnexo,
+  useConsultarRuc
+} from '../../hooks/useOperaciones';
 import { operacionesApi } from '../../api/operacionesApi';
 import { generarSireRvieTxt, exportarComprobantesCsv } from '../../services/sireTxtGenerator';
 import { exportarRegistroVentasPdf } from '../../services/pdfExportService';
@@ -62,6 +75,13 @@ export const RegistroVentasView: React.FC<RegistroVentasViewProps> = ({
   const anularVentaMutation = useAnularVenta(empresa.id);
   const duplicarVentaMutation = useDuplicarVenta(empresa.id);
   const crearAnexoMutation = useCrearAnexo(empresa.id);
+  const consultarRucMutation = useConsultarRuc(empresa.id);
+
+  // Estados de Consulta RUC en Tiempo Real (SUNAT + Caché PostgreSQL)
+  const [rucBusquedaDirecta, setRucBusquedaDirecta] = useState('');
+  const [resultadoConsultaRuc, setResultadoConsultaRuc] = useState<any | null>(null);
+  const [errorConsultaRuc, setErrorConsultaRuc] = useState<string | null>(null);
+  const [consultandoModalRuc, setConsultandoModalRuc] = useState(false);
 
   // Formulario Digitación Rápida
   const [formTipo, setFormTipo] = useState<'01' | '03' | '07' | '08'>('01');
@@ -219,6 +239,66 @@ export const RegistroVentasView: React.FC<RegistroVentasViewProps> = ({
       success('Cliente registrado exitosamente en el catálogo de anexos.', 'Cliente Guardado');
     } catch (err: any) {
       error('Error registrando cliente: ' + (err?.response?.data?.message || err.message), 'Fallo al Guardar');
+    }
+  };
+
+  const handleConsultarRucEnRegistro = async (forzar = false) => {
+    const ruc = rucBusquedaDirecta.trim().replace(/\D/g, '');
+    if (!ruc) {
+      setErrorConsultaRuc('Ingrese un RUC de 11 dígitos');
+      return;
+    }
+    if (ruc.length !== 11) {
+      setErrorConsultaRuc('El RUC debe tener exactamente 11 dígitos');
+      return;
+    }
+
+    setErrorConsultaRuc(null);
+    try {
+      const res = await consultarRucMutation.mutateAsync({ ruc, tipoEntidad: 'CLIENTE', forzar });
+      setResultadoConsultaRuc(res);
+      if (res.anexoId) {
+        setFormClienteId(res.anexoId);
+      }
+      if (res.condicion === 'NO_HABIDO') {
+        error(
+          'El cliente figura como NO HABIDO en SUNAT. Verifique la emisión de factura según Resolución SUNAT.',
+          'Alerta Tributaria SUNAT'
+        );
+      } else if (res.estado !== 'ACTIVO') {
+        error(
+          `El cliente figura en estado ${res.estado} en SUNAT. Compruebe la validez del comprobante.`,
+          'Alerta Tributaria SUNAT'
+        );
+      } else {
+        success(
+          `${res.razonSocial} (${res.origen === 'CACHE_LOCAL' ? 'Caché PostgreSQL' : 'SUNAT en Vivo'})`,
+          'Cliente Verificado'
+        );
+      }
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err.message || 'Error al consultar RUC';
+      setErrorConsultaRuc(msg);
+      error(msg, 'Error Consulta RUC');
+    }
+  };
+
+  const handleConsultarRucEnModal = async () => {
+    const ruc = nuevoCliRuc.trim().replace(/\D/g, '');
+    if (ruc.length !== 11) {
+      error('El RUC debe contener exactamente 11 dígitos', 'RUC Incompleto');
+      return;
+    }
+    setConsultandoModalRuc(true);
+    try {
+      const res = await consultarRucMutation.mutateAsync({ ruc, tipoEntidad: 'CLIENTE' });
+      setNuevoCliRazon(res.razonSocial);
+      setNuevoCliDireccion(res.direccion || '');
+      success(`Datos SUNAT cargados: ${res.razonSocial}`, 'Consulta Exitosa');
+    } catch (err: any) {
+      error(err?.response?.data?.message || err.message || 'Error consultando SUNAT', 'Fallo de Consulta');
+    } finally {
+      setConsultandoModalRuc(false);
     }
   };
 
@@ -425,31 +505,198 @@ export const RegistroVentasView: React.FC<RegistroVentasViewProps> = ({
               </div>
             </div>
 
-            {/* Cliente con Alta Rápida */}
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+            {/* Cliente con Validación SUNAT en Tiempo Real */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
               <div className="flex items-center justify-between">
-                <label className="text-[11px] font-bold text-slate-700">Cliente (RUC / DNI / Razón Social)</label>
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-emerald-600" />
+                  <label className="text-xs font-bold text-slate-800">
+                    Cliente y Validación SUNAT en Tiempo Real
+                  </label>
+                </div>
                 <button
                   type="button"
                   onClick={() => setModalAltaCliente(true)}
                   className="text-xs font-bold text-emerald-600 hover:text-emerald-800 flex items-center gap-1 cursor-pointer"
                 >
-                  <Plus className="w-3.5 h-3.5" /> + Alta Rápida Cliente
+                  <Plus className="w-3.5 h-3.5" /> + Alta Rápida
                 </button>
               </div>
 
-              <select
-                value={formClienteId}
-                onChange={(e) => setFormClienteId(e.target.value)}
-                className="w-full text-xs font-semibold p-2.5 border border-slate-300 rounded-xl bg-white"
-              >
-                <option value="">-- Seleccione un cliente registrado --</option>
-                {anexosList.map((a: any) => (
-                  <option key={a.id} value={a.id}>
-                    {a.numeroDocumento} - {a.razonSocial}
-                  </option>
-                ))}
-              </select>
+              {/* Barra de Consulta RUC en Vivo */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    maxLength={11}
+                    value={rucBusquedaDirecta}
+                    onChange={(e) => {
+                      setRucBusquedaDirecta(e.target.value.replace(/\D/g, ''));
+                      if (errorConsultaRuc) setErrorConsultaRuc(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleConsultarRucEnRegistro();
+                      }
+                    }}
+                    placeholder="Consultar RUC Cliente (11 dígitos, ej. 20601234567)..."
+                    className="w-full text-xs font-mono font-bold pl-3 pr-20 py-2.5 border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-emerald-500 outline-none"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono font-semibold text-slate-400">
+                    {rucBusquedaDirecta.length}/11
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleConsultarRucEnRegistro(false)}
+                  disabled={consultarRucMutation.isPending || rucBusquedaDirecta.length !== 11}
+                  className={`px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-xs cursor-pointer ${
+                    consultarRucMutation.isPending || rucBusquedaDirecta.length !== 11
+                      ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                      : 'bg-emerald-600 hover:bg-emerald-700 text-white active:scale-95'
+                  }`}
+                  title="Verificar estado del cliente en SUNAT y caché local"
+                >
+                  {consultarRucMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Verificando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      <span>Consultar SUNAT</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {errorConsultaRuc && (
+                <div className="p-2 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-[11px] font-semibold flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                  <span>{errorConsultaRuc}</span>
+                </div>
+              )}
+
+              {/* Selector de lista de clientes guardados */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                  O seleccionar cliente del catálogo:
+                </label>
+                <select
+                  value={formClienteId}
+                  onChange={(e) => {
+                    setFormClienteId(e.target.value);
+                    const c = anexosList.find((a: any) => a.id === e.target.value);
+                    if (c) {
+                      setRucBusquedaDirecta(c.numeroDocumento);
+                      setResultadoConsultaRuc(null);
+                    }
+                  }}
+                  className="w-full text-xs font-semibold p-2 border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-emerald-500 outline-none"
+                >
+                  <option value="">-- Seleccionar cliente del catálogo --</option>
+                  {anexosList.map((a: any) => (
+                    <option key={a.id} value={a.id}>
+                      {a.numeroDocumento} - {a.razonSocial} {a.condicionSunat === 'NO_HABIDO' ? '⚠️ (NO HABIDO)' : ''} ({a.estadoSunat})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Ficha de Estado Tributario del Cliente Seleccionado */}
+              {(clienteSeleccionado || resultadoConsultaRuc) && (
+                <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-2 text-xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                    <div>
+                      <div className="font-mono font-bold text-slate-900 text-xs">
+                        RUC: {clienteSeleccionado?.numeroDocumento || resultadoConsultaRuc?.ruc}
+                      </div>
+                      <div className="font-bold text-slate-800 text-xs mt-0.5">
+                        {clienteSeleccionado?.razonSocial || resultadoConsultaRuc?.razonSocial}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {/* Badge Estado SUNAT */}
+                      {(() => {
+                        const estado = clienteSeleccionado?.estadoSunat || resultadoConsultaRuc?.estado;
+                        const esActivo = estado === 'ACTIVO';
+                        return (
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-1 ${
+                            esActivo 
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' 
+                              : 'bg-rose-100 text-rose-800 border border-rose-300'
+                          }`}>
+                            {esActivo ? <ShieldCheck className="w-3 h-3 text-emerald-600" /> : <ShieldAlert className="w-3 h-3 text-rose-600" />}
+                            {estado}
+                          </span>
+                        );
+                      })()}
+
+                      {/* Badge Condición SUNAT */}
+                      {(() => {
+                        const condicion = clienteSeleccionado?.condicionSunat || resultadoConsultaRuc?.condicion;
+                        const esHabido = condicion === 'HABIDO';
+                        return (
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-1 ${
+                            esHabido 
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' 
+                              : 'bg-amber-100 text-amber-800 border border-amber-300 animate-pulse'
+                          }`}>
+                            {esHabido ? 'HABIDO' : '⚠️ NO HABIDO'}
+                          </span>
+                        );
+                      })()}
+
+                      {/* Origen de los datos */}
+                      {resultadoConsultaRuc?.origen && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-slate-100 text-slate-600">
+                          {resultadoConsultaRuc.origen === 'CACHE_LOCAL' ? '⚡ Caché DB' : '🌐 SUNAT Online'}
+                        </span>
+                      )}
+
+                      {/* Botón Revalidar en Vivo */}
+                      <button
+                        type="button"
+                        onClick={() => handleConsultarRucEnRegistro(true)}
+                        disabled={consultarRucMutation.isPending}
+                        className="px-2 py-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg flex items-center gap-1 cursor-pointer transition"
+                        title="Forzar actualización en tiempo real desde SUNAT"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${consultarRucMutation.isPending ? 'animate-spin' : ''}`} />
+                        <span>Revalidar</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="text-[11px] text-slate-500">
+                    <span className="font-semibold text-slate-700">Dirección Fiscal: </span>
+                    {clienteSeleccionado?.direccion || resultadoConsultaRuc?.direccion || 'Sin dirección registrada en padrón'}
+                  </div>
+
+                  {/* Alerta de Contingencia para Ventas */}
+                  {((clienteSeleccionado?.condicionSunat === 'NO_HABIDO' || resultadoConsultaRuc?.condicion === 'NO_HABIDO') ||
+                    (clienteSeleccionado?.estadoSunat && clienteSeleccionado?.estadoSunat !== 'ACTIVO') ||
+                    (resultadoConsultaRuc?.estado && resultadoConsultaRuc?.estado !== 'ACTIVO')) && (
+                    <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs space-y-1">
+                      <div className="font-bold flex items-center gap-1.5 text-amber-950">
+                        <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                        <span>Observación Tributaria SUNAT (Cliente en condición especial)</span>
+                      </div>
+                      <p className="text-[11px] leading-relaxed text-amber-900">
+                        {resultadoConsultaRuc?.advertenciaFiscal || 
+                          'Este cliente figura como NO HABIDO o NO ACTIVO en SUNAT. La emisión de facturas electrónicas a contribuyentes no válidos puede ser observada en la validación del CDR o generar contingencias fiscales en la fiscalización de ventas.'}
+                      </p>
+                      <div className="text-[10px] text-amber-800 font-semibold italic">
+                        ℹ️ Se permite emitir y registrar el comprobante conforme a la política comercial de la empresa.
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Importes */}
@@ -794,14 +1041,39 @@ export const RegistroVentasView: React.FC<RegistroVentasViewProps> = ({
             <div className="space-y-3">
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1">RUC o DNI</label>
-                <input
-                  type="text"
-                  maxLength={11}
-                  value={nuevoCliRuc}
-                  onChange={(e) => setNuevoCliRuc(e.target.value.replace(/\D/g, ''))}
-                  placeholder="20XXXXXXXXX o DNI"
-                  className="w-full text-xs font-mono font-bold p-2 border border-slate-300 rounded-xl"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    maxLength={11}
+                    value={nuevoCliRuc}
+                    onChange={(e) => setNuevoCliRuc(e.target.value.replace(/\D/g, ''))}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleConsultarRucEnModal();
+                      }
+                    }}
+                    placeholder="20XXXXXXXXX o DNI"
+                    className="flex-1 text-xs font-mono font-bold p-2 border border-slate-300 rounded-xl"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleConsultarRucEnModal}
+                    disabled={consultandoModalRuc || nuevoCliRuc.length !== 11}
+                    className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
+                      consultandoModalRuc || nuevoCliRuc.length !== 11
+                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                        : 'bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer shadow-xs'
+                    }`}
+                  >
+                    {consultandoModalRuc ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                    )}
+                    <span>Consultar</span>
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1">Razón Social o Nombre Completo</label>

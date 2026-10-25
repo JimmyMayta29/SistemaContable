@@ -18,6 +18,11 @@ import {
   exportarRegistroVentasPdf, 
   exportarLibroDiarioPdf 
 } from '../../services/pdfExportService';
+import { useReportStyle } from '../../context/ReportStyleContext';
+import { 
+  exportarReporteSiscontPdf, 
+  construirDefinicionRegistroComprasSiscont 
+} from '../../services/reports/siscontFormatEngine';
 
 export type TipoReportePdf = 'COMPRAS' | 'VENTAS' | 'DIARIO' | 'HONORARIOS';
 
@@ -44,6 +49,7 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
   asientos,
   honorarios = []
 }) => {
+  const { reportStyle, setReportStyle } = useReportStyle();
   const [tipoReporte, setTipoReporte] = useState<TipoReportePdf>(tipoReporteInicial);
   const [incluirLogo, setIncluirLogo] = useState(true);
   const [incluirFirmas, setIncluirFirmas] = useState(true);
@@ -57,7 +63,11 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
     setTimeout(() => {
       try {
         if (tipoReporte === 'COMPRAS') {
-          exportarRegistroComprasPdf(empresa, compras, periodo);
+          if (reportStyle === 'siscont') {
+            exportarReporteSiscontPdf(construirDefinicionRegistroComprasSiscont(empresa, compras, periodo));
+          } else {
+            exportarRegistroComprasPdf(empresa, compras, periodo);
+          }
         } else if (tipoReporte === 'VENTAS') {
           exportarRegistroVentasPdf(empresa, ventas, periodo);
         } else if (tipoReporte === 'DIARIO') {
@@ -152,6 +162,30 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
                 <option value="HONORARIOS">Honorarios Profesionales (4ta)</option>
               </select>
               <div className="text-[11px] text-slate-500 mt-1 font-mono">{getConteoItems()}</div>
+              
+              <div className="mt-2.5">
+                <span className="block text-[11px] font-bold text-slate-600 mb-1">Estilo de Impresión:</span>
+                <div className="flex bg-white rounded-xl border border-slate-200 p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setReportStyle('siscont')}
+                    className={`flex-1 py-1 px-1.5 rounded-lg text-[10px] font-bold transition cursor-pointer ${
+                      reportStyle === 'siscont' ? 'bg-black text-white' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    SISCONT (B/N)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReportStyle('actual')}
+                    className={`flex-1 py-1 px-1.5 rounded-lg text-[10px] font-bold transition cursor-pointer ${
+                      reportStyle === 'actual' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Actual (Color)
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div>
