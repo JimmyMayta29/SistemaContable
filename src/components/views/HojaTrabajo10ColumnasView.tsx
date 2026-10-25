@@ -18,11 +18,11 @@ import {
 import { AsientoContable, EmpresaCliente } from '../../types';
 import { 
   calcularHojaTrabajo10Columnas, 
-  exportarHojaTrabajoExcel, 
+  exportarHojaTrabajoHojaCalculo,
   exportarHojaTrabajoPdf,
   HojaTrabajo10ColumnasReporte,
   OpcionesHojaTrabajo10Col
-} from '../../services/siscontReportsEngine';
+} from '../../services/reportesEngine';
 import { useToast } from '../../context/ToastContext';
 
 interface HojaTrabajo10ColumnasViewProps {
@@ -88,8 +88,8 @@ export const HojaTrabajo10ColumnasView: React.FC<HojaTrabajo10ColumnasViewProps>
     });
   };
 
-  const handleExportExcel = () => {
-    exportarHojaTrabajoExcel(reporte, {
+  const handleExportHojaCalculo = () => {
+    exportarHojaTrabajoHojaCalculo(reporte, {
       incluirFechaImpresion,
       incluirUsuario,
       usuarioNombre: 'Contador General'
@@ -98,13 +98,13 @@ export const HojaTrabajo10ColumnasView: React.FC<HojaTrabajo10ColumnasViewProps>
 
   return (
     <div className="space-y-4">
-      {/* 1. Header con Membrete Oficial Tipo SISCONT */}
+      {/* 1. Encabezado del reporte */}
       <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-4">
           <div>
             <div className="flex items-center gap-2">
               <span className="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 text-[10px] font-bold font-mono">
-                FORMATO OFICIAL SISCONT
+                Formato estándar
               </span>
               <span className="text-xs text-slate-400 font-mono">
                 PCGE 2020 / NIIF
@@ -134,12 +134,12 @@ export const HojaTrabajo10ColumnasView: React.FC<HojaTrabajo10ColumnasViewProps>
               Mapeo Función
             </button>
             <button
-              onClick={handleExportExcel}
+              onClick={handleExportHojaCalculo}
               className="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
-              title="Exportar Hoja de Trabajo 10 Columnas a Excel"
+              title="Exportar Hoja de Trabajo 10 Columnas a hoja de cálculo"
             >
               <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
-              Excel (10 Col)
+              Hoja de cálculo (10 Col)
             </button>
             <button
               onClick={handleExportPdf}

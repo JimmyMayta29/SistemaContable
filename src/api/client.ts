@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-// Soporte para cliente web SPA y distribución empaquetada de escritorio (Tauri / Electron)
+// Soporte para cliente web y aplicación de escritorio
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 export const apiClient = axios.create({

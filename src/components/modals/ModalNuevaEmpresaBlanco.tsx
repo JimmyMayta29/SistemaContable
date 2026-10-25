@@ -136,7 +136,7 @@ export const ModalNuevaEmpresaBlanco: React.FC<ModalNuevaEmpresaBlancoProps> = (
             <div>
               <h3 className="font-bold text-base leading-tight">Asistente: Registrar Empresa en Blanco</h3>
               <p className="text-xs text-slate-300">
-                Inicialización limpia con Plan Contable PCGE 2019/2020 y Subdiarios SISCONT
+                Inicialización limpia con Plan Contable PCGE 2019/2020 y subdiarios estándar
               </p>
             </div>
           </div>

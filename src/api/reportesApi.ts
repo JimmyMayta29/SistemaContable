@@ -2,11 +2,11 @@ import { apiClient } from './client';
 import { 
   HojaTrabajo10ColumnasReporte, 
   OpcionesHojaTrabajo10Col, 
-  LibroDiarioSISCONTReporte, 
-  OpcionesLibroDiarioSISCONT 
-} from '../services/siscontReportsEngine';
+  LibroDiarioESTANDARReporte,
+  OpcionesLibroDiarioESTANDAR
+} from '../services/reportesEngine';
 
-export const reportesSiscontApi = {
+export const reportesApi = {
   async getHojaTrabajo10Columnas(
     empresaId: string, 
     periodo: string, 
@@ -22,11 +22,11 @@ export const reportesSiscontApi = {
     return res && res.data ? res.data : res;
   },
 
-  async getLibroDiarioSISCONT(
+  async getLibroDiarioESTANDAR(
     empresaId: string, 
     periodo: string, 
-    opciones?: OpcionesLibroDiarioSISCONT
-  ): Promise<LibroDiarioSISCONTReporte> {
+    opciones?: OpcionesLibroDiarioESTANDAR
+  ): Promise<LibroDiarioESTANDARReporte> {
     const params = new URLSearchParams();
     if (periodo) params.set('periodo', periodo);
     if (opciones?.incluirAjustesYCierre !== undefined) params.set('incluirCierre', String(opciones.incluirAjustesYCierre));

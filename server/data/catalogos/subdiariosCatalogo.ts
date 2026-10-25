@@ -1,5 +1,5 @@
 /**
- * Catálogo Oficial de Subdiarios SISCONT
+ * Catálogo Oficial de Subdiarios ESTANDAR
  */
 
 export interface SubdiarioCatalogo {

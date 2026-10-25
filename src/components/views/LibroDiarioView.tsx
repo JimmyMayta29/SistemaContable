@@ -19,12 +19,12 @@ import {
 } from 'lucide-react';
 import { AsientoContable, EmpresaCliente } from '../../types';
 import { 
-  calcularLibroDiarioSISCONT,
-  exportarLibroDiarioExcel, 
-  exportarLibroDiarioSISCONTPdf,
-  LibroDiarioSISCONTReporte,
-  OpcionesLibroDiarioSISCONT
-} from '../../services/siscontReportsEngine';
+  calcularLibroDiarioESTANDAR,
+  exportarLibroDiarioHojaCalculo,
+  exportarLibroDiarioESTANDARPdf,
+  LibroDiarioESTANDARReporte,
+  OpcionesLibroDiarioESTANDAR
+} from '../../services/reportesEngine';
 import { useToast } from '../../context/ToastContext';
 import { EmptyStateInstructivo } from '../common/EmptyStateInstructivo';
 
@@ -60,9 +60,9 @@ export const LibroDiarioView: React.FC<LibroDiarioViewProps> = ({
   const [incluirNumeroPagina, setIncluirNumeroPagina] = useState<boolean>(true);
   const [saltoPaginaPorSubdiario, setSaltoPaginaPorSubdiario] = useState<boolean>(false);
 
-  // Cálculo del reporte oficial SISCONT
-  const reporte: LibroDiarioSISCONTReporte = useMemo(() => {
-    return calcularLibroDiarioSISCONT(asientos, empresa, periodo, {
+  // Cálculo del reporte en formato estándar
+  const reporte: LibroDiarioESTANDARReporte = useMemo(() => {
+    return calcularLibroDiarioESTANDAR(asientos, empresa, periodo, {
       incluirAjustesYCierre: incluirCierre,
       formatoFecha,
       voucherDesde: voucherDesde.trim() || undefined,
@@ -105,7 +105,7 @@ export const LibroDiarioView: React.FC<LibroDiarioViewProps> = ({
   };
 
   const handleExportPdf = () => {
-    exportarLibroDiarioSISCONTPdf(reporte, {
+    exportarLibroDiarioESTANDARPdf(reporte, {
       incluirFechaImpresion,
       incluirUsuario,
       incluirNumeroPagina,
@@ -114,8 +114,8 @@ export const LibroDiarioView: React.FC<LibroDiarioViewProps> = ({
     });
   };
 
-  const handleExportExcel = () => {
-    exportarLibroDiarioExcel(reporte, {
+  const handleExportHojaCalculo = () => {
+    exportarLibroDiarioHojaCalculo(reporte, {
       incluirFechaImpresion,
       incluirUsuario,
       usuarioNombre: 'Contador General'
@@ -132,13 +132,13 @@ export const LibroDiarioView: React.FC<LibroDiarioViewProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* 1. Encabezado Oficial Formato SISCONT */}
+      {/* 1. Encabezado del reporte */}
       <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-4">
           <div>
             <div className="flex items-center gap-2">
               <span className="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 text-[10px] font-bold font-mono">
-                FORMATO OFICIAL SISCONT (5.1)
+                Formato estándar (5.1)
               </span>
               <span className="text-xs text-slate-400 font-mono">
                 SUBDIARIO → N° VOUCHER → CUO → COMPROBANTE
@@ -168,12 +168,12 @@ export const LibroDiarioView: React.FC<LibroDiarioViewProps> = ({
               PLE 5.1 (TXT)
             </button>
             <button
-              onClick={handleExportExcel}
+              onClick={handleExportHojaCalculo}
               className="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
-              title="Exportar Libro Diario estructurado a Excel con totales"
+              title="Exportar Libro Diario estructurado a hoja de cálculo con totales"
             >
               <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
-              Excel SISCONT
+              Hoja de cálculo
             </button>
             <button
               onClick={handleExportPdf}
@@ -356,7 +356,7 @@ export const LibroDiarioView: React.FC<LibroDiarioViewProps> = ({
         </div>
       </div>
 
-      {/* 4. Estructura Jerárquica del Libro Diario SISCONT */}
+      {/* 4. Estructura jerárquica del Libro Diario */}
       {subdiariosVisibles.length === 0 && (
         <EmptyStateInstructivo
           moduloNombre="Libro Diario (Formato 5.1)"

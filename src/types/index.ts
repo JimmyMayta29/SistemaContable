@@ -1,6 +1,6 @@
 export type TipoComprobante = '01' | '03' | '07' | '08' | 'R01' | '09' | '02';
 
-// Subdiarios estándar al estilo SISCONT SMART / CODEPLEX
+// Subdiarios contables estándar
 export type CodigoSubdiario = '00' | '01' | '02' | '03' | '04' | '05' | '06' | '07' | '08' | '09';
 
 export interface SubdiarioConfig {
@@ -9,7 +9,7 @@ export interface SubdiarioConfig {
   tipo: 'APERTURA' | 'COMPRAS' | 'VENTAS' | 'CAJA_ING' | 'CAJA_EGR' | 'BANCOS' | 'HONORARIOS' | 'PLANILLA' | 'DESTINO' | 'CIERRE';
 }
 
-export const SUBDIARIOS_SISCONT: SubdiarioConfig[] = [
+export const SUBDIARIOS_ESTANDAR: SubdiarioConfig[] = [
   { codigo: '00', descripcion: '00 - Asiento de Apertura / Inventario Inicial', tipo: 'APERTURA' },
   { codigo: '01', descripcion: '01 - Registro de Compras (RCE)', tipo: 'COMPRAS' },
   { codigo: '02', descripcion: '02 - Registro de Ventas (RVIE)', tipo: 'VENTAS' },
@@ -126,7 +126,7 @@ export interface Comprobante {
   cdrData?: CdrSunatInfo;
   observaciones?: string;
 
-  // Siscont Smart Conciliación con Propuesta SUNAT
+  // Conciliación con propuesta SUNAT
   estadoComparacionSire?: 'COINCIDE' | 'SOLO_EN_SISTEMA' | 'SOLO_EN_SUNAT' | 'DIFERENCIA_MONTO';
 }
 
@@ -144,7 +144,7 @@ export interface AsientoContableItem {
 
 export interface AsientoContable {
   id: string;
-  subdiario: CodigoSubdiario; // Estilo SISCONT: 01, 02, 05, etc.
+  subdiario: CodigoSubdiario; // Códigos estándar: 01, 02, 05, etc.
   numeroAsiento: string; // Ej: 01090001 (Subdiario 01, Mes 09, Correlativo 0001)
   periodo: string; // YYYY-MM
   fecha: string;
@@ -165,7 +165,7 @@ export interface AsientoContable {
 
 export interface EmpresaCliente {
   id: string;
-  codigoEmpresa?: string; // Código al estilo Siscont (ej. EMP01)
+  codigoEmpresa?: string; // Código de empresa (ej. EMP01)
   ruc: string;
   razonSocial: string;
   nombreComercial: string;

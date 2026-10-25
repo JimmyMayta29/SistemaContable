@@ -111,7 +111,7 @@ export interface HojaTrabajo10ColumnasReporte {
   };
 }
 
-export interface OpcionesLibroDiarioSISCONT {
+export interface OpcionesLibroDiarioESTANDAR {
   incluirAjustesYCierre?: boolean;
   voucherDesde?: string;
   voucherHasta?: string;
@@ -120,7 +120,7 @@ export interface OpcionesLibroDiarioSISCONT {
   saltoPaginaSubdiario?: boolean;
 }
 
-export interface LineaDiarioSISCONT {
+export interface LineaDiarioESTANDAR {
   linea: number;
   fechaEmision: string;
   codigoCuenta: string;
@@ -130,7 +130,7 @@ export interface LineaDiarioSISCONT {
   credito: number;
 }
 
-export interface VoucherDiarioSISCONT {
+export interface VoucherDiarioESTANDAR {
   numeroVoucher: string;
   correlativo: number;
   cuo: string;
@@ -141,25 +141,25 @@ export interface VoucherDiarioSISCONT {
   totalDebito: number;
   totalCredito: number;
   cuadrado: boolean;
-  lineas: LineaDiarioSISCONT[];
+  lineas: LineaDiarioESTANDAR[];
 }
 
-export interface BloqueSubdiarioSISCONT {
+export interface BloqueSubdiarioESTANDAR {
   codigo: string;
   descripcion: string;
-  vouchers: VoucherDiarioSISCONT[];
+  vouchers: VoucherDiarioESTANDAR[];
   totalDebitoSubdiario: number;
   totalCreditoSubdiario: number;
   cuadrado: boolean;
 }
 
-export interface LibroDiarioSISCONTReporte {
+export interface LibroDiarioESTANDARReporte {
   empresaId: string;
   razonSocial: string;
   ruc: string;
   periodo: string;
   moneda: string;
-  subdiarios: BloqueSubdiarioSISCONT[];
+  subdiarios: BloqueSubdiarioESTANDAR[];
   totalGeneralDebito: number;
   totalGeneralCredito: number;
   estaCuadrado: boolean;
@@ -1122,7 +1122,7 @@ export const librosEEFFService = {
   },
 
   /**
-   * Genera la Hoja de Trabajo oficial de 10 Columnas tipo SISCONT con todas las reglas peruanas:
+   * Genera la Hoja de Trabajo oficial de 10 Columnas tipo ESTANDAR con todas las reglas peruanas:
    * 1. MONTOS (Débito, Crédito)
    * 2. SALDO (Deudor, Acreedor)
    * 3. INVENTARIO (Activo, Pasivo) con opción de cuentas correctoras (19, 29, 39) en negativo
@@ -1477,15 +1477,15 @@ export const librosEEFFService = {
   },
 
   /**
-   * Genera el Libro Diario estructurado formato SISCONT:
+   * Genera el Libro Diario estructurado formato ESTANDAR:
    * Bloque por subdiario -> bloque por voucher -> fila "TOTAL COMPROBANTE" -> total subdiario -> total general
    * Consistente 100% con PLE 5.1 (mismo CUO, correlativo y líneas)
    */
-  async generarLibroDiarioSISCONT(
+  async generarLibroDiarioESTANDAR(
     empresaId: string, 
     periodo: string, 
-    opciones?: OpcionesLibroDiarioSISCONT
-  ): Promise<LibroDiarioSISCONTReporte> {
+    opciones?: OpcionesLibroDiarioESTANDAR
+  ): Promise<LibroDiarioESTANDARReporte> {
     let empresa: any = null;
     try {
       empresa = await empresaRepository.obtenerPorId(empresaId);
@@ -1532,7 +1532,7 @@ export const librosEEFFService = {
     const mesStr = periodo && periodo.length >= 7 ? periodo.substring(5, 7) : '09';
     const plePeriodo = `${anioStr}${mesStr}00`;
 
-    const subdiarios: BloqueSubdiarioSISCONT[] = [];
+    const subdiarios: BloqueSubdiarioESTANDAR[] = [];
     let totalGeneralDebitoMoney = Money.create(0);
     let totalGeneralCreditoMoney = Money.create(0);
     let totalVouchers = 0;
@@ -1547,7 +1547,7 @@ export const librosEEFFService = {
       let totalDebitoSubMoney = Money.create(0);
       let totalCreditoSubMoney = Money.create(0);
 
-      const vouchers: VoucherDiarioSISCONT[] = [];
+      const vouchers: VoucherDiarioESTANDAR[] = [];
 
       for (let i = 0; i < asientosSub.length; i++) {
         const a = asientosSub[i];
@@ -1562,7 +1562,7 @@ export const librosEEFFService = {
           fechaFormateada = rawFecha.split('T')[0].split('-').reverse().join('/');
         }
 
-        const lineas: LineaDiarioSISCONT[] = [];
+        const lineas: LineaDiarioESTANDAR[] = [];
         let debitoVoucherMoney = Money.create(0);
         let creditoVoucherMoney = Money.create(0);
 
@@ -1681,7 +1681,7 @@ export const librosEEFFService = {
    * Genera el archivo PLE 5.1 (Libro Diario) oficial derivado de la misma consulta
    */
   async generarPle51DiarioTxt(empresaId: string, periodo: string) {
-    const diario = await this.generarLibroDiarioSISCONT(empresaId, periodo, { incluirAjustesYCierre: true });
+    const diario = await this.generarLibroDiarioESTANDAR(empresaId, periodo, { incluirAjustesYCierre: true });
     return {
       nombreArchivo: diario.ple51NombreArchivo,
       contenidoTxt: diario.ple51ContenidoTxt,

@@ -110,7 +110,7 @@ export interface HojaTrabajo10ColumnasReporte {
   };
 }
 
-export interface OpcionesLibroDiarioSISCONT {
+export interface OpcionesLibroDiarioESTANDAR {
   incluirAjustesYCierre?: boolean;
   voucherDesde?: string;
   voucherHasta?: string;
@@ -119,7 +119,7 @@ export interface OpcionesLibroDiarioSISCONT {
   saltoPaginaSubdiario?: boolean;
 }
 
-export interface LineaDiarioSISCONT {
+export interface LineaDiarioESTANDAR {
   linea: number;
   fechaEmision: string;
   codigoCuenta: string;
@@ -129,7 +129,7 @@ export interface LineaDiarioSISCONT {
   credito: number;
 }
 
-export interface VoucherDiarioSISCONT {
+export interface VoucherDiarioESTANDAR {
   numeroVoucher: string;
   correlativo: number;
   cuo: string;
@@ -140,25 +140,25 @@ export interface VoucherDiarioSISCONT {
   totalDebito: number;
   totalCredito: number;
   cuadrado: boolean;
-  lineas: LineaDiarioSISCONT[];
+  lineas: LineaDiarioESTANDAR[];
 }
 
-export interface BloqueSubdiarioSISCONT {
+export interface BloqueSubdiarioESTANDAR {
   codigo: string;
   descripcion: string;
-  vouchers: VoucherDiarioSISCONT[];
+  vouchers: VoucherDiarioESTANDAR[];
   totalDebitoSubdiario: number;
   totalCreditoSubdiario: number;
   cuadrado: boolean;
 }
 
-export interface LibroDiarioSISCONTReporte {
+export interface LibroDiarioESTANDARReporte {
   empresaId: string;
   razonSocial: string;
   ruc: string;
   periodo: string;
   moneda: string;
-  subdiarios: BloqueSubdiarioSISCONT[];
+  subdiarios: BloqueSubdiarioESTANDAR[];
   totalGeneralDebito: number;
   totalGeneralCredito: number;
   estaCuadrado: boolean;
@@ -182,7 +182,7 @@ const MESES = [
 ];
 
 /**
- * Motor de cálculo en cliente para la Hoja de Trabajo 10 Columnas (formato tipo SISCONT)
+ * Motor de cálculo en cliente para la Hoja de Trabajo 10 Columnas en formato estándar
  */
 export function calcularHojaTrabajo10Columnas(
   asientos: AsientoContable[],
@@ -490,14 +490,14 @@ export function calcularHojaTrabajo10Columnas(
 }
 
 /**
- * Motor de cálculo en cliente para el Libro Diario formato SISCONT
+ * Motor de cálculo en cliente para el Libro Diario en formato estándar
  */
-export function calcularLibroDiarioSISCONT(
+export function calcularLibroDiarioESTANDAR(
   asientos: AsientoContable[],
   empresa: EmpresaCliente,
   periodo: string,
-  opciones?: OpcionesLibroDiarioSISCONT
-): LibroDiarioSISCONTReporte {
+  opciones?: OpcionesLibroDiarioESTANDAR
+): LibroDiarioESTANDARReporte {
   const formatoFecha = opciones?.formatoFecha || 'DD/MM/AAAA';
   const incluirAjustesYCierre = opciones?.incluirAjustesYCierre ?? true;
 
@@ -531,7 +531,7 @@ export function calcularLibroDiarioSISCONT(
   const mesStr = periodo && periodo.length >= 7 ? periodo.substring(5, 7) : '09';
   const plePeriodo = `${anioStr}${mesStr}00`;
 
-  const subdiarios: BloqueSubdiarioSISCONT[] = [];
+  const subdiarios: BloqueSubdiarioESTANDAR[] = [];
   let totalGeneralDebito = 0;
   let totalGeneralCredito = 0;
   let totalVouchers = 0;
@@ -543,7 +543,7 @@ export function calcularLibroDiarioSISCONT(
 
     let totalDebitoSub = 0;
     let totalCreditoSub = 0;
-    const vouchers: VoucherDiarioSISCONT[] = [];
+    const vouchers: VoucherDiarioESTANDAR[] = [];
 
     for (let i = 0; i < asientosSub.length; i++) {
       const a = asientosSub[i];
@@ -556,7 +556,7 @@ export function calcularLibroDiarioSISCONT(
         fechaFormateada = rawFecha.split('T')[0].split('-').reverse().join('/');
       }
 
-      const lineas: LineaDiarioSISCONT[] = [];
+      const lineas: LineaDiarioESTANDAR[] = [];
       let debitoVoucher = 0;
       let creditoVoucher = 0;
 
@@ -662,9 +662,9 @@ export function calcularLibroDiarioSISCONT(
 }
 
 /**
- * Exporta la Hoja de Trabajo 10 Columnas a Excel (formato CSV/TSV profesional estructurado)
+ * Exporta la Hoja de Trabajo 10 Columnas a hoja de cálculo (formato CSV/TSV profesional estructurado)
  */
-export function exportarHojaTrabajoExcel(
+export function exportarHojaTrabajoHojaCalculo(
   reporte: HojaTrabajo10ColumnasReporte,
   opciones?: OpcionesExportacionImpresion
 ) {
@@ -763,17 +763,17 @@ export function exportarHojaTrabajoExcel(
 }
 
 /**
- * Exporta el Libro Diario SISCONT a Excel con estructura jerárquica
+ * Exporta el Libro Diario a hoja de cálculo con estructura jerárquica
  */
-export function exportarLibroDiarioExcel(
-  reporte: LibroDiarioSISCONTReporte,
+export function exportarLibroDiarioHojaCalculo(
+  reporte: LibroDiarioESTANDARReporte,
   opciones?: OpcionesExportacionImpresion
 ) {
   const lineas: string[] = [];
 
   lineas.push(`RAZÓN SOCIAL:\t${reporte.razonSocial}`);
   lineas.push(`RUC:\t${reporte.ruc}`);
-  lineas.push(`LIBRO:\tLIBRO DIARIO (FORMATO OFICIAL 5.1 / SISCONT)`);
+  lineas.push(`LIBRO:\tLIBRO DIARIO (FORMATO 5.1)`);
   lineas.push(`PERIODO:\t${reporte.periodo}`);
   lineas.push(`MONEDA:\tSOLES (PEN)`);
   if (opciones?.incluirFechaImpresion) {
@@ -813,7 +813,7 @@ export function exportarLibroDiarioExcel(
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `LIBRO_DIARIO_SISCONT_${reporte.ruc}_${reporte.periodo.replace('-', '')}.xls`;
+  a.download = `LIBRO_DIARIO_${reporte.ruc}_${reporte.periodo.replace('-', '')}.xls`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -997,10 +997,10 @@ export function exportarHojaTrabajoPdf(
 }
 
 /**
- * Exporta el Libro Diario SISCONT a PDF oficial con bloques jerárquicos
+ * Exporta el Libro Diario a PDF oficial con bloques jerárquicos
  */
-export function exportarLibroDiarioSISCONTPdf(
-  reporte: LibroDiarioSISCONTReporte,
+export function exportarLibroDiarioESTANDARPdf(
+  reporte: LibroDiarioESTANDARReporte,
   opciones?: OpcionesExportacionImpresion
 ) {
   const doc = new jsPDF({
@@ -1139,7 +1139,7 @@ export function exportarLibroDiarioSISCONTPdf(
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7.5);
       doc.setTextColor(71, 85, 105);
-      doc.text(`RUC: ${reporte.ruc}  |  LIBRO DIARIO (FORMATO 5.1 SUNAT / SISCONT)`, 12, 16.5);
+      doc.text(`RUC: ${reporte.ruc}  |  LIBRO DIARIO (FORMATO 5.1 SUNAT)`, 12, 16.5);
 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9);
@@ -1165,10 +1165,10 @@ export function exportarLibroDiarioSISCONTPdf(
         doc.setTextColor(148, 163, 184);
         doc.text(`Página ${data.pageNumber} de ${totalPages}`, pageWidth - 12, pageHeight - 8, { align: 'right' });
       }
-      doc.text('SunaConta Cloud - Libro Diario Oficial SISCONT (Consistente con PLE 5.1)', 12, pageHeight - 8);
+      doc.text('SunaConta Cloud - Libro Diario (Consistente con PLE 5.1)', 12, pageHeight - 8);
     }
   });
 
-  const nombreArchivo = `LIBRO_DIARIO_SISCONT_${reporte.ruc}_${reporte.periodo.replace('-', '')}.pdf`;
+  const nombreArchivo = `LIBRO_DIARIO_${reporte.ruc}_${reporte.periodo.replace('-', '')}.pdf`;
   doc.save(nombreArchivo);
 }

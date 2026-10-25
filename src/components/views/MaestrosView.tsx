@@ -12,11 +12,11 @@ import {
   Building 
 } from 'lucide-react';
 import { PLAN_CONTABLE_PCGE } from '../../data/pcgeAccounts';
-import { TIPOS_CAMBIO_SBS_DEMO, CATALOGO_ENTIDADES_DEMO } from '../../data/maestrosSiscont';
-import { SUBDIARIOS_SISCONT, TipoCambioSbs, EntidadCatalogo } from '../../types';
+import { TIPOS_CAMBIO_SBS_DEMO, CATALOGO_ENTIDADES_DEMO } from '../../data/maestros';
+import { SUBDIARIOS_ESTANDAR, TipoCambioSbs, EntidadCatalogo } from '../../types';
 import { useToast } from '../../context/ToastContext';
 
-export const MaestrosSiscontView: React.FC = () => {
+export const MaestrosView: React.FC = () => {
   const { success } = useToast();
   const [tab, setTab] = useState<'PCGE' | 'TIPO_CAMBIO' | 'ENTIDADES' | 'SUBDIARIOS'>('PCGE');
   
@@ -51,7 +51,7 @@ export const MaestrosSiscontView: React.FC = () => {
         <div>
           <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
             <FolderTree className="w-5 h-5 text-blue-600" />
-            Tablas & Maestros Generales (Arquitectura SISCONT SMART)
+            Tablas y maestros generales
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
             Configuración del Plan Contable General Empresarial (PCGE), Tipos de Cambio SBS diarios, Catálogo de Entidades y Subdiarios.
@@ -267,7 +267,7 @@ export const MaestrosSiscontView: React.FC = () => {
       {tab === 'SUBDIARIOS' && (
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
           <div className="p-4 bg-slate-50 border-b border-slate-200 text-xs text-slate-600">
-            Estructura oficial de subdiarios para clasificación de vouchers en Libros Principales y Auxiliares (Estándar Siscont Smart).
+            Estructura oficial de subdiarios para clasificación de vouchers en Libros Principales y Auxiliares.
           </div>
           <table className="w-full text-left border-collapse text-xs">
             <thead className="bg-slate-50 text-slate-600 uppercase text-[10px] font-bold border-b border-slate-200">
@@ -278,7 +278,7 @@ export const MaestrosSiscontView: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
-              {SUBDIARIOS_SISCONT.map(sub => (
+              {SUBDIARIOS_ESTANDAR.map(sub => (
                 <tr key={sub.codigo} className="hover:bg-slate-50">
                   <td className="py-2.5 px-4 font-mono font-bold text-blue-700">{sub.codigo}</td>
                   <td className="py-2.5 px-4 font-semibold text-slate-900">{sub.descripcion}</td>

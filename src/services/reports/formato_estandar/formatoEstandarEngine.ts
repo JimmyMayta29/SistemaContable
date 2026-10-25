@@ -1,8 +1,8 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { EmpresaCliente, Comprobante } from '../../types';
+import { EmpresaCliente, Comprobante } from '../../../types';
 
-export interface ColumnaReporteSiscont {
+export interface ColumnaReporteEstandar {
   id: string;
   label: string;
   subLabel?: string;
@@ -17,14 +17,14 @@ export interface SuperHeaderColumna {
   colSpan: number;
 }
 
-export interface FilaGrupoReporteSiscont {
+export interface FilaGrupoReporteEstandar {
   grupoId: string;
   tituloGrupo: string; // ej: "Tipo Doc.: 01  FACTURA"
   filas: Array<Record<string, any>>;
   totalesGrupo: Record<string, number>;
 }
 
-export interface SiscontReportDefinition {
+export interface EstandarReportDefinition {
   titulo: string;
   orientacion: 'landscape' | 'portrait';
   empresa: {
@@ -35,19 +35,19 @@ export interface SiscontReportDefinition {
   };
   moneda: string; // "SOLES"
   superHeaders?: SuperHeaderColumna[];
-  columnas: ColumnaReporteSiscont[];
-  grupos: FilaGrupoReporteSiscont[];
+  columnas: ColumnaReporteEstandar[];
+  grupos: FilaGrupoReporteEstandar[];
   totalesGenerales: Record<string, number>;
   mostrarFechaHoraImpresion?: boolean;
 }
 
 /**
- * Formatea importes según norma contable SISCONT:
+ * Formatea importes en formato estándar:
  * - Coma para miles, punto para decimales (2 decimales fijos)
  * - Muestra 0.00 cuando es cero
  * - Negativos con signo menos (-150.00)
  */
-export function formatearImporteSiscont(num: number | undefined | null): string {
+export function formatearImporteEstandar(num: number | undefined | null): string {
   const val = typeof num === 'number' && !isNaN(num) ? num : 0;
   return val.toLocaleString('en-US', {
     minimumFractionDigits: 2,
@@ -58,7 +58,7 @@ export function formatearImporteSiscont(num: number | undefined | null): string 
 /**
  * Formatea fechas a formato d/mm/aaaa (día sin cero inicial)
  */
-export function formatearFechaSiscont(fechaStr: string | undefined | null): string {
+export function formatearFechaEstandar(fechaStr: string | undefined | null): string {
   if (!fechaStr) return '';
   const clean = fechaStr.split('T')[0];
   const parts = clean.split('-');
@@ -102,19 +102,19 @@ function obtenerNombreMesPeriodo(periodo: string): string {
 }
 
 /**
- * Construye la definición tabular de 22 columnas para el REGISTRO DE COMPRAS SISCONT
+ * Construye la definición tabular de 22 columnas para el REGISTRO DE COMPRAS
  */
-export function construirDefinicionRegistroComprasSiscont(
+export function construirDefinicionRegistroComprasEstandar(
   empresa: EmpresaCliente,
   compras: any[],
   periodo: string,
   opciones?: { mostrarFechaHora?: boolean }
-): SiscontReportDefinition {
+): EstandarReportDefinition {
   const mesNombre = obtenerNombreMesPeriodo(periodo);
   const anio = periodo ? periodo.split('-')[0] : '2026';
 
-  // 22 Columnas SISCONT
-  const columnas: ColumnaReporteSiscont[] = [
+  // 22 columnas del reporte
+  const columnas: ColumnaReporteEstandar[] = [
     { id: 'orden', label: 'O', align: 'center', cellWidthPdf: 6 },
     { id: 'voucher', label: 'N° VOU', align: 'center', cellWidthPdf: 14 },
     { id: 'fechaEmision', label: 'F. Emisión', align: 'center', cellWidthPdf: 14 },
@@ -191,7 +191,7 @@ export function construirDefinicionRegistroComprasSiscont(
     total: 0
   };
 
-  const grupos: FilaGrupoReporteSiscont[] = tiposOrdenados.map((tipo) => {
+  const grupos: FilaGrupoReporteEstandar[] = tiposOrdenados.map((tipo) => {
     const comprasTipo = gruposMap.get(tipo)!;
     const descTipo = DESCRIPCION_TIPO_COMPROBANTE[tipo] || `TIPO ${tipo}`;
     const tituloGrupo = `Tipo Doc.: ${tipo}  ${descTipo}`;
@@ -262,12 +262,12 @@ export function construirDefinicionRegistroComprasSiscont(
       return {
         orden: String(correlativoGlobal),
         voucher: voucherStr,
-        fechaEmision: formatearFechaSiscont(c.fechaEmision),
-        fechaVenc: formatearFechaSiscont(c.fechaVencimiento || c.fechaVenc),
+        fechaEmision: formatearFechaEstandar(c.fechaEmision),
+        fechaVenc: formatearFechaEstandar(c.fechaVencimiento || c.fechaVenc),
         docTipo: c.tipoComprobante || c.tipoDoc || '01',
         docSerie: c.serie || '',
         docNumero: c.numero || '',
-        refFecha: formatearFechaSiscont(c.docModificaFecha),
+        refFecha: formatearFechaEstandar(c.docModificaFecha),
         refTipo: c.docModificaTipo || '',
         refSerie: c.docModificaSerie || '',
         refNumero: c.docModificaNumero || '',
@@ -287,7 +287,7 @@ export function construirDefinicionRegistroComprasSiscont(
         otrosTrib,
         total,
         tipoCambio: tc > 1 ? tc.toFixed(3) : '',
-        spotFecha: formatearFechaSiscont(c.detraccionFecha || c.spotFecha),
+        spotFecha: formatearFechaEstandar(c.detraccionFecha || c.spotFecha),
         spotNumero: c.detraccionNumero || c.spotNumero || ''
       };
     });
@@ -319,7 +319,7 @@ export function construirDefinicionRegistroComprasSiscont(
 }
 
 /**
- * Exporta el reporte a PDF cumpliendo con la especificación visual estricta SISCONT:
+ * Exporta el reporte a PDF cumpliendo con la especificación visual del formato estándar:
  * - Negro sobre blanco puro (#000000 sobre #FFFFFF)
  * - Sin colores de fondo, sin sombreado, sin degradados
  * - Tipografía fina (peso 300)
@@ -330,7 +330,7 @@ export function construirDefinicionRegistroComprasSiscont(
  * - TOTAL GENERAL con línea superior y doble subrayado contable
  * - Pie de página centrado "Pag. N"
  */
-export function exportarReporteSiscontPdf(def: SiscontReportDefinition): void {
+export function exportarReporteEstandarPdf(def: EstandarReportDefinition): void {
   const doc = new jsPDF({
     orientation: def.orientacion,
     unit: 'mm',
@@ -379,7 +379,7 @@ export function exportarReporteSiscontPdf(def: SiscontReportDefinition): void {
     }))
   );
 
-  // Construir filas del cuerpo con agrupaciones SISCONT
+  // Construir filas del cuerpo agrupadas
   const bodyRows: any[] = [];
 
   def.grupos.forEach((grupo) => {
@@ -403,7 +403,7 @@ export function exportarReporteSiscontPdf(def: SiscontReportDefinition): void {
       const rowData = def.columnas.map((col) => {
         const raw = fila[col.id];
         if (col.isNumeric) {
-          return formatearImporteSiscont(raw);
+          return formatearImporteEstandar(raw);
         }
         return raw !== undefined && raw !== null ? String(raw) : '';
       });
@@ -416,7 +416,7 @@ export function exportarReporteSiscontPdf(def: SiscontReportDefinition): void {
         return 'TOTALES:';
       }
       if (col.isNumeric && col.sumar) {
-        return formatearImporteSiscont(grupo.totalesGrupo[col.id]);
+        return formatearImporteEstandar(grupo.totalesGrupo[col.id]);
       }
       return '';
     });
@@ -442,7 +442,7 @@ export function exportarReporteSiscontPdf(def: SiscontReportDefinition): void {
       return 'TOTAL GENERAL:';
     }
     if (col.isNumeric && col.sumar) {
-      return formatearImporteSiscont(def.totalesGenerales[col.id]);
+      return formatearImporteEstandar(def.totalesGenerales[col.id]);
     }
     return '';
   });
@@ -536,12 +536,12 @@ export function exportarReporteSiscontPdf(def: SiscontReportDefinition): void {
 }
 
 /**
- * Exporta el reporte a Excel en formato Tab-Separated Values (TSV / .xls) con UTF-8 BOM:
+ * Exporta el reporte a hoja de cálculo en formato Tab-Separated Values (TSV / .xls) con UTF-8 BOM:
  * - Conserva exactamente las mismas columnas, agrupaciones y filas de totales
  * - Sin colores de fondo ni estilos invasivos
- * - Se abre de forma nativa en Excel con columnas y cifras numéricas intactas
+ * - Se abre en una hoja de cálculo con columnas y cifras numéricas intactas
  */
-export function exportarReporteSiscontExcel(def: SiscontReportDefinition): void {
+export function exportarReporteEstandarHojaCalculo(def: EstandarReportDefinition): void {
   const lineas: string[] = [];
 
   // Encabezado Superior

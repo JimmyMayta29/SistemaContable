@@ -212,7 +212,7 @@ export const MisEmpresasNivel1View: React.FC<MisEmpresasNivel1ViewProps> = ({
               className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs border border-white/20 backdrop-blur-sm flex items-center gap-1.5 transition cursor-pointer"
             >
               <Archive className="w-3.5 h-3.5 text-amber-300" />
-              <span>Backups SISCONT</span>
+              <span>Copias de seguridad</span>
             </button>
 
             <button
@@ -337,14 +337,14 @@ export const MisEmpresasNivel1View: React.FC<MisEmpresasNivel1ViewProps> = ({
           checklist={[
             { titulo: 'Identificación de RUC y Razón Social', cumplido: false, descripcion: 'Validación automática bajo algoritmo Módulo 11 de SUNAT' },
             { titulo: 'Asignación de Régimen Tributario', cumplido: false, descripcion: 'MYPE Tributario, Régimen General, Régimen Especial o NRUS' },
-            { titulo: 'Inicialización de Catálogos PCGE', cumplido: true, descripcion: 'Plan Contable General Empresarial 2019/2020 y Subdiarios SISCONT predefinidos' }
+            { titulo: 'Inicialización de Catálogos PCGE', cumplido: true, descripcion: 'Plan Contable General Empresarial 2019/2020 y subdiarios estándar predefinidos' }
           ]}
           onRegistrarNuevo={() => setIsModalBlancoOpen(true)}
           textoRegistrar="Registrar Empresa en Blanco"
           onCargarPlantilla={handleRestablecerDemo}
           textoPlantilla="Cargar Empresa Demo S.A.C."
           onImportarCsv={() => setIsImportModalOpen(true)}
-          textoImportar="Importar desde CSV / Excel"
+          textoImportar="Importar desde CSV / hoja de cálculo"
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -610,7 +610,7 @@ Mendoza & Asociados — Asesores Tributarios S.C.R.L.`}
         }}
       />
 
-      {/* Modal: Importación CSV/Excel */}
+      {/* Modal: Importación CSV / hoja de cálculo */}
       <ModalImportacionCsv
         isOpen={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
@@ -619,7 +619,7 @@ Mendoza & Asociados — Asesores Tributarios S.C.R.L.`}
         }}
       />
 
-      {/* Modal: Copias de Seguridad por Empresa (SISCONT) */}
+      {/* Modal: Copias de seguridad por empresa */}
       <ModalBackupEmpresa
         isOpen={isBackupModalOpen}
         onClose={() => setIsBackupModalOpen(false)}

@@ -98,9 +98,9 @@ SALIDA LITERAL DEL COMANDO:
 ======================================================
 ✅ [Fase 7B: Navegación por Empresa, Entorno Aislado & Selector Multi-Nivel] completado en 1.61s
 
-▶ Ejecutando Fase 7C-2: Reportes SISCONT (Hoja de Trabajo 10 Columnas & Libro Diario) (server/tests/run_tests_fase7c2.ts)...
+▶ Ejecutando Fase 7C-2: Reportes ESTANDAR (Hoja de Trabajo 10 Columnas & Libro Diario) (server/tests/run_tests_fase7c2.ts)...
 ========================================================================
-🧪 SUITE DE PRUEBAS AUTOMATIZADAS — FASE 7C-2: REPORTES TIPO SISCONT
+🧪 SUITE DE PRUEBAS AUTOMATIZADAS — FASE 7C-2: REPORTES TIPO ESTANDAR
    (HOJA DE TRABAJO 10 COLUMNAS & LIBRO DIARIO ESTRUCTURADO)
 ========================================================================
 🔹 Test 1: Hoja de Trabajo 10 Columnas — 5 Verificaciones de Cuadre
@@ -125,7 +125,7 @@ SALIDA LITERAL DEL COMANDO:
   ✅ PASÓ: Cuenta 3913 en Pasivo es 0 cuando se presenta en Activo negativo
   ✅ PASÓ: Resultado del ejercicio idéntico en ambas modalidades: S/ 8000
   ✅ PASÓ: Balance se mantiene cuadrado con correctoras en negativo
-🔹 Test 4: Libro Diario SISCONT — Estructura Jerárquica & Subdiarios
+🔹 Test 4: Libro Diario ESTANDAR — Estructura Jerárquica & Subdiarios
   ✅ PASÓ: Subdiarios generados en el Diario: 3
   ✅ PASÓ: Total General del Diario cuadrado (Total Débito = Total Crédito)
   ✅ PASÓ: Subdiario 00 cuadrado
@@ -153,7 +153,7 @@ SALIDA LITERAL DEL COMANDO:
 ========================================================================
 🏆 SUITE FASE 7C-2 COMPLETADA: 40/40 PRUEBAS EXITOSAS
 ========================================================================
-✅ [Fase 7C-2: Reportes SISCONT (Hoja de Trabajo 10 Columnas & Libro Diario)] completado en 1.54s
+✅ [Fase 7C-2: Reportes ESTANDAR (Hoja de Trabajo 10 Columnas & Libro Diario)] completado en 1.54s
 
 ▶ Ejecutando Fase 8: Calidad, PostgreSQL, Concurrencia & Property Testing (server/tests/run_tests_fase8.ts)...
 ======================================================
@@ -195,7 +195,7 @@ TABLA RESUMEN DE PRUEBAS AUTOMATIZADAS POR SUITE:
 | Fase 6: SIRE, UBL & PLE           | run_tests_fase6.ts | 52 | 52 | 0 | 2.08s  |
 | Fase 7: Seguridad, RLS & Crypto   | run_tests_fase7.ts | 43 | 43 | 0 | 1.62s  |
 | Fase 7B: Navegación & Aislamiento | run_tests_fase7b.ts| 27 | 27 | 0 | 1.61s  |
-| Fase 7C-2: Reportes SISCONT       | run_tests_fase7c2.ts| 40| 40 | 0 | 1.54s  |
+| Fase 7C-2: Reportes ESTANDAR       | run_tests_fase7c2.ts| 40| 40 | 0 | 1.54s  |
 | Fase 8: Concurrencia & PostgreSQL | run_tests_fase8.ts | 26 | 26 | 0 | 2.58s  |
 | Fase 9: SIRE Cierre & PLAME       | run_tests_fase9.ts | 43 | 43 | 0 | 1.73s  |
 | Fase 10: Auditoría DAOT & Cierre  | run_tests_fase10.ts| 25 | 25 | 0 | 1.45s  |

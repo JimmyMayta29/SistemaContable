@@ -227,12 +227,12 @@ export const TitleBar: React.FC<TitleBarProps> = ({
           <BackgroundJobsPanel isOpen={isJobsOpen} onClose={() => setIsJobsOpen(false)} />
         </div>
 
-        {/* Importación CSV/Excel */}
+        {/* Importación CSV / hoja de cálculo */}
         {isNivelEmpresa && onOpenImport && (
           <button
             onClick={onOpenImport}
             className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
-            title="Importar Catálogos y Apertura CSV / Excel"
+            title="Importar catálogos y apertura desde CSV / hoja de cálculo"
           >
             <Upload className="w-4 h-4 text-slate-600" />
           </button>
@@ -243,7 +243,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
           <button
             onClick={onOpenBackup}
             className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
-            title="Copia de Seguridad y Restauración SISCONT (.ZIP AES-256)"
+            title="Copia de seguridad y restauración (.ZIP AES-256)"
           >
             <Archive className="w-4 h-4 text-slate-600" />
           </button>
@@ -260,18 +260,18 @@ export const TitleBar: React.FC<TitleBarProps> = ({
           </button>
         )}
 
-        {/* Switch Formato de Reportes (SISCONT vs Actual) */}
+        {/* Selector de formato de reportes */}
         <div className="flex items-center bg-slate-100 rounded-xl border border-slate-200 p-0.5 text-[11px] font-bold shadow-xs">
           <button
-            onClick={() => setReportStyle('siscont')}
+            onClick={() => setReportStyle('estandar')}
             className={`px-2 py-1 rounded-lg transition cursor-pointer ${
-              reportStyle === 'siscont'
+              reportStyle === 'estandar'
                 ? 'bg-black text-white shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
-            title="Formato SISCONT oficial en blanco y negro"
+            title="Formato estándar en blanco y negro"
           >
-            SISCONT
+            Estándar
           </button>
           <button
             onClick={() => setReportStyle('actual')}

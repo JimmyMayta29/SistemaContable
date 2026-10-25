@@ -490,7 +490,7 @@ export const AsistenteSetupInicial: React.FC<AsistenteSetupInicialProps> = ({
                         1. Vincule su aplicación de autenticación
                       </p>
                       <p className="text-xs text-slate-600">
-                        Abra Google Authenticator, Microsoft Authenticator o Authy en su teléfono y agregue la siguiente clave secreta:
+                        Abra una aplicación de autenticación en su teléfono y agregue la siguiente clave secreta:
                       </p>
                       <div className="mt-2 inline-block px-3 py-1.5 bg-white border border-indigo-200 rounded-md font-mono text-xs font-bold text-indigo-700 select-all tracking-wider">
                         {mfaSecret || 'CARGANDO_SECRETO...'}
@@ -565,7 +565,7 @@ export const AsistenteSetupInicial: React.FC<AsistenteSetupInicialProps> = ({
                   },
                   {
                     icon: <Building2 className="w-4 h-4 text-blue-600" />,
-                    title: 'Subdiarios Estándar SISCONT (00 al 99)',
+                    title: 'Subdiarios estándar (00 al 99)',
                     desc: 'Apertura (00), Compras (01), Ventas (02), Cobranzas (03), Pagos (04), Diario General (05), Honorarios (06), Planillas (07).'
                   },
                   {

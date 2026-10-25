@@ -118,7 +118,7 @@ export const EmpresasClientesView: React.FC<EmpresasClientesViewProps> = ({
         <div>
           <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
             <Building2 className="w-5 h-5 text-blue-600" />
-            Módulo General: Gestión & Acceso a Empresas (SISCONT SMART)
+            Gestión y acceso a empresas
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
             Módulo principal de acceso: selecciona la empresa para ingresar a su entorno contable. Cada empresa mantiene su contabilidad, libros SIRE, vouchers y base de datos SQL de manera 100% aislada e independiente.

@@ -20,7 +20,7 @@ import {
   SlidersHorizontal,
   ChevronRight
 } from 'lucide-react';
-import { CodigoSubdiario, SUBDIARIOS_SISCONT } from '../../types';
+import { CodigoSubdiario, SUBDIARIOS_ESTANDAR } from '../../types';
 import { PLAN_CONTABLE_PCGE } from '../../data/pcgeAccounts';
 import { 
   useAsientosList, 
@@ -32,13 +32,13 @@ import {
 import { apiClient } from '../../api/client';
 import { useToast } from '../../context/ToastContext';
 
-interface VouchersSiscontViewProps {
+interface VouchersViewProps {
   empresaId: string;
   periodo: string;
   isPeriodoCerrado?: boolean;
 }
 
-export const VouchersSiscontView: React.FC<VouchersSiscontViewProps> = ({
+export const VouchersView: React.FC<VouchersViewProps> = ({
   empresaId,
   periodo,
   isPeriodoCerrado = false
@@ -329,7 +329,7 @@ export const VouchersSiscontView: React.FC<VouchersSiscontViewProps> = ({
             className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:outline-none"
           >
             <option value="TODOS">Todos los Subdiarios (00 - 09)</option>
-            {SUBDIARIOS_SISCONT.map(s => (
+            {SUBDIARIOS_ESTANDAR.map(s => (
               <option key={s.codigo} value={s.codigo}>{s.descripcion}</option>
             ))}
           </select>
@@ -534,7 +534,7 @@ export const VouchersSiscontView: React.FC<VouchersSiscontViewProps> = ({
                     onChange={(e) => setModalSubdiario(e.target.value as CodigoSubdiario)}
                     className="w-full p-2 bg-white border border-slate-200 rounded-xl font-medium"
                   >
-                    {SUBDIARIOS_SISCONT.map(s => (
+                    {SUBDIARIOS_ESTANDAR.map(s => (
                       <option key={s.codigo} value={s.codigo}>{s.descripcion}</option>
                     ))}
                   </select>

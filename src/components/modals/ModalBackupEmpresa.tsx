@@ -159,7 +159,7 @@ export const ModalBackupEmpresa: React.FC<ModalBackupEmpresaProps> = ({
               <Archive className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-base leading-tight">Copias de Seguridad por Empresa (Formato SISCONT)</h3>
+              <h3 className="font-bold text-base leading-tight">Copias de seguridad por empresa</h3>
               <p className="text-xs text-slate-300">
                 Empresa: <span className="text-white font-semibold">{empresaActiva?.razonSocial || 'Empresa Activa'}</span> (RUC: {empresaActiva?.ruc})
               </p>

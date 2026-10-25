@@ -12,21 +12,21 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { 
-  SiscontReportDefinition, 
-  exportarReporteSiscontPdf, 
-  exportarReporteSiscontExcel,
-  formatearImporteSiscont 
-} from '../../services/reports/siscontFormatEngine';
+  EstandarReportDefinition,
+  exportarReporteEstandarPdf,
+  exportarReporteEstandarHojaCalculo,
+  formatearImporteEstandar
+} from '../../services/reports/formato_estandar/formatoEstandarEngine';
 import { useReportStyle } from '../../context/ReportStyleContext';
 
-interface VisorReporteSiscontModalProps {
+interface VisorReporteModalProps {
   isOpen: boolean;
   onClose: () => void;
-  definicion: SiscontReportDefinition;
+  definicion: EstandarReportDefinition;
   onExportarLegacyPdf?: () => void;
 }
 
-export const VisorReporteSiscontModal: React.FC<VisorReporteSiscontModalProps> = ({
+export const VisorReporteModal: React.FC<VisorReporteModalProps> = ({
   isOpen,
   onClose,
   definicion,
@@ -39,13 +39,13 @@ export const VisorReporteSiscontModal: React.FC<VisorReporteSiscontModalProps> =
     setMostrarFechaHoraImpresion 
   } = useReportStyle();
 
-  const [formatoDescarga, setFormatoDescarga] = useState<'PDF' | 'EXCEL'>('PDF');
+  const [formatoDescarga, setFormatoDescarga] = useState<'PDF' | 'HOJA_CALCULO'>('PDF');
   const [dropdownDescargaOpen, setDropdownDescargaOpen] = useState(false);
 
   if (!isOpen) return null;
 
   const handleDescargar = () => {
-    const defActualizada: SiscontReportDefinition = {
+    const defActualizada: EstandarReportDefinition = {
       ...definicion,
       mostrarFechaHoraImpresion
     };
@@ -56,9 +56,9 @@ export const VisorReporteSiscontModal: React.FC<VisorReporteSiscontModalProps> =
     }
 
     if (formatoDescarga === 'PDF') {
-      exportarReporteSiscontPdf(defActualizada);
+      exportarReporteEstandarPdf(defActualizada);
     } else {
-      exportarReporteSiscontExcel(defActualizada);
+      exportarReporteEstandarHojaCalculo(defActualizada);
     }
   };
 
@@ -73,7 +73,7 @@ export const VisorReporteSiscontModal: React.FC<VisorReporteSiscontModalProps> =
         <div className="print:hidden flex flex-wrap items-center justify-between p-3.5 bg-slate-100 border-b border-slate-200 gap-3">
           <div className="flex items-center gap-3">
             <span className="font-mono text-xs font-bold bg-black text-white px-2 py-0.5 rounded">
-              SISCONT FORMAT
+              Formato estándar
             </span>
             <span className="text-xs font-bold text-slate-800 truncate max-w-md">
               {definicion.titulo} — {definicion.empresa.razonSocial}
@@ -85,14 +85,14 @@ export const VisorReporteSiscontModal: React.FC<VisorReporteSiscontModalProps> =
             <div className="flex items-center bg-white rounded-xl border border-slate-300 p-0.5 text-xs font-semibold shadow-xs">
               <span className="px-2 text-[11px] text-slate-500 font-bold uppercase">Formato:</span>
               <button
-                onClick={() => setReportStyle('siscont')}
+                onClick={() => setReportStyle('estandar')}
                 className={`px-2.5 py-1 rounded-lg text-xs transition cursor-pointer font-bold ${
-                  reportStyle === 'siscont'
+                  reportStyle === 'estandar'
                     ? 'bg-black text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                SISCONT (B/N)
+                Estándar (B/N)
               </button>
               <button
                 onClick={() => setReportStyle('actual')}
@@ -165,17 +165,17 @@ export const VisorReporteSiscontModal: React.FC<VisorReporteSiscontModalProps> =
 
                   <button
                     onClick={() => {
-                      setFormatoDescarga('EXCEL');
+                      setFormatoDescarga('HOJA_CALCULO');
                       setDropdownDescargaOpen(false);
                     }}
                     className={`w-full px-3 py-2 text-left flex items-center justify-between hover:bg-slate-50 cursor-pointer ${
-                      formatoDescarga === 'EXCEL' ? 'font-bold text-black' : 'text-slate-700'
+                      formatoDescarga === 'HOJA_CALCULO' ? 'font-bold text-black' : 'text-slate-700'
                     }`}
                   >
                     <span className="flex items-center gap-1.5">
-                      <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" /> Hoja Excel (.xls)
+                      <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" /> Hoja de cálculo (.xls)
                     </span>
-                    {formatoDescarga === 'EXCEL' && <Check className="w-3.5 h-3.5 text-black" />}
+                    {formatoDescarga === 'HOJA_CALCULO' && <Check className="w-3.5 h-3.5 text-black" />}
                   </button>
                 </div>
               )}
@@ -192,11 +192,11 @@ export const VisorReporteSiscontModal: React.FC<VisorReporteSiscontModalProps> =
           </div>
         </div>
 
-        {/* Hoja Imprimible en Formato SISCONT Estricto (A4 Landscape / #000 sobre blanco) */}
+        {/* Hoja Imprimible en formato estándar (A4 Landscape / #000 sobre blanco) */}
         <div className="flex-1 overflow-auto p-4 sm:p-8 bg-slate-200 print:bg-white print:p-0 print:m-0 flex justify-center">
           <div className="bg-white text-black w-full shadow-lg print:shadow-none p-6 sm:p-8 border border-slate-300 print:border-none font-sans font-light text-[10px] leading-tight select-text">
             
-            {/* 1. Encabezado Oficial SISCONT */}
+            {/* 1. Encabezado del reporte */}
             <div className="flex justify-between items-start mb-3 pb-2 border-b border-black">
               {/* Izquierda */}
               <div className="space-y-0.5 text-left">
@@ -234,7 +234,7 @@ export const VisorReporteSiscontModal: React.FC<VisorReporteSiscontModalProps> =
               </div>
             </div>
 
-            {/* 2. Tabla Tabular SISCONT */}
+            {/* 2. Tabla del reporte */}
             <div className="overflow-x-auto print:overflow-visible">
               <table className="w-full text-left border-collapse font-light text-[9px] font-sans">
                 {/* Cabecera enmarcada repetible en cada página física */}
@@ -299,7 +299,7 @@ export const VisorReporteSiscontModal: React.FC<VisorReporteSiscontModalProps> =
                                     : 'text-left'
                                 }`}
                               >
-                                {col.isNumeric ? formatearImporteSiscont(val) : (val ?? '')}
+                                {col.isNumeric ? formatearImporteEstandar(val) : (val ?? '')}
                               </td>
                             );
                           })}
@@ -319,7 +319,7 @@ export const VisorReporteSiscontModal: React.FC<VisorReporteSiscontModalProps> =
                           if (col.isNumeric && col.sumar) {
                             return (
                               <td key={col.id} className="px-1 py-1 text-right font-mono font-bold">
-                                {formatearImporteSiscont(grupo.totalesGrupo[col.id])}
+                                {formatearImporteEstandar(grupo.totalesGrupo[col.id])}
                               </td>
                             );
                           }
@@ -342,7 +342,7 @@ export const VisorReporteSiscontModal: React.FC<VisorReporteSiscontModalProps> =
                       if (col.isNumeric && col.sumar) {
                         return (
                           <td key={col.id} className="px-1 py-1.5 text-right font-mono font-bold">
-                            {formatearImporteSiscont(definicion.totalesGenerales[col.id])}
+                            {formatearImporteEstandar(definicion.totalesGenerales[col.id])}
                           </td>
                         );
                       }
@@ -353,7 +353,7 @@ export const VisorReporteSiscontModal: React.FC<VisorReporteSiscontModalProps> =
               </table>
             </div>
 
-            {/* 3. Pie de Página Centrado SISCONT */}
+            {/* 3. Pie de página centrado */}
             <div className="mt-6 text-center text-[9px] text-black">
               Pag. 1
             </div>

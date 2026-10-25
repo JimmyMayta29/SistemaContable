@@ -6,7 +6,7 @@ import { empresaRepository, EMPRESAS_STORE } from '../repositories/empresaReposi
 
 async function ejecutarSuiteFase13Importacion() {
   console.log('========================================================================');
-  console.log('🧪 SUITE DE PRUEBAS AUTOMATIZADAS — FASE 13: MOTOR DE IMPORTACIÓN CSV/EXCEL');
+  console.log('🧪 SUITE DE PRUEBAS AUTOMATIZADAS — FASE 13: MOTOR DE IMPORTACIÓN CSV/HOJA DE CÁLCULO');
   console.log('   (Plantillas, Neutralización CSV, Validación Módulo 11, Cuadre & Rollback)');
   console.log('========================================================================\n');
 

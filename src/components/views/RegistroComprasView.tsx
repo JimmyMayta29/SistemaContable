@@ -40,8 +40,8 @@ import { generarSireRceTxt, exportarComprobantesCsv } from '../../services/sireT
 import { exportarRegistroComprasPdf } from '../../services/pdfExportService';
 import { VisorDocumentoSunatModal } from '../modals/VisorDocumentoSunatModal';
 import { useReportStyle } from '../../context/ReportStyleContext';
-import { construirDefinicionRegistroComprasSiscont } from '../../services/reports/siscontFormatEngine';
-import { VisorReporteSiscontModal } from '../modals/VisorReporteSiscontModal';
+import { construirDefinicionRegistroComprasEstandar } from '../../services/reports/formato_estandar/formatoEstandarEngine';
+import { VisorReporteModal } from '../modals/VisorReporteModal';
 import { useToast } from '../../context/ToastContext';
 import { EmptyStateInstructivo } from '../common/EmptyStateInstructivo';
 
@@ -61,7 +61,7 @@ export const RegistroComprasView: React.FC<RegistroComprasViewProps> = ({
 }) => {
   const { success, error } = useToast();
   const { reportStyle } = useReportStyle();
-  const [modalSiscontOpen, setModalSiscontOpen] = useState(false);
+  const [modalEstandarOpen, setModalEstandarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'LIBRO' | 'DIGITACION'>('LIBRO');
   const [searchTerm, setSearchTerm] = useState('');
   const [filtroTipo, setFiltroTipo] = useState<string>('TODOS');
@@ -416,17 +416,17 @@ export const RegistroComprasView: React.FC<RegistroComprasViewProps> = ({
 
           <button
             onClick={() => {
-              if (reportStyle === 'siscont') {
-                setModalSiscontOpen(true);
+              if (reportStyle === 'estandar') {
+                setModalEstandarOpen(true);
               } else {
                 exportarRegistroComprasPdf(empresa, legacyCompras, periodo);
               }
             }}
             className="px-3 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-xs"
-            title={reportStyle === 'siscont' ? 'Previsualizar y Exportar en Formato Oficial SISCONT (B/N)' : 'Exportar Libro PDF Oficial'}
+            title={reportStyle === 'estandar' ? 'Previsualizar y exportar en formato estándar (B/N)' : 'Exportar Libro PDF Oficial'}
           >
-            <FileText className={`w-4 h-4 ${reportStyle === 'siscont' ? 'text-black' : 'text-blue-600'}`} />
-            <span>{reportStyle === 'siscont' ? 'Reporte SISCONT' : 'PDF (8.4)'}</span>
+            <FileText className={`w-4 h-4 ${reportStyle === 'estandar' ? 'text-black' : 'text-blue-600'}`} />
+            <span>{reportStyle === 'estandar' ? 'Reporte estándar' : 'PDF (8.4)'}</span>
           </button>
         </div>
       </div>
@@ -1263,12 +1263,12 @@ export const RegistroComprasView: React.FC<RegistroComprasViewProps> = ({
         </div>
       )}
 
-      {/* Modal Visor y Exportador SISCONT (Formato Oficial B/N) */}
-      {modalSiscontOpen && (
-        <VisorReporteSiscontModal
-          isOpen={modalSiscontOpen}
-          onClose={() => setModalSiscontOpen(false)}
-          definicion={construirDefinicionRegistroComprasSiscont(empresa, itemsCompras, periodo)}
+      {/* Modal de vista previa y exportación en formato estándar (B/N) */}
+      {modalEstandarOpen && (
+        <VisorReporteModal
+          isOpen={modalEstandarOpen}
+          onClose={() => setModalEstandarOpen(false)}
+          definicion={construirDefinicionRegistroComprasEstandar(empresa, itemsCompras, periodo)}
           onExportarLegacyPdf={() => exportarRegistroComprasPdf(empresa, legacyCompras, periodo)}
         />
       )}

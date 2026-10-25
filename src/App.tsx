@@ -54,8 +54,8 @@ import { EmpresaPeriodoProvider, useEmpresaPeriodo } from './context/EmpresaPeri
 import { MisEmpresasNivel1View } from './components/views/MisEmpresasNivel1View';
 import { AccesoDenegadoView } from './components/views/AccesoDenegadoView';
 import { DashboardView } from './components/views/DashboardView';
-import { MaestrosSiscontView } from './components/views/MaestrosSiscontView';
-import { VouchersSiscontView } from './components/views/VouchersSiscontView';
+import { MaestrosView } from './components/views/MaestrosView';
+import { VouchersView } from './components/views/VouchersView';
 import { HonorariosView } from './components/views/HonorariosView';
 import { SireConciliadorView } from './components/views/SireConciliadorView';
 import { SunatSyncView } from './components/views/SunatSyncView';
@@ -482,7 +482,7 @@ function AppContent({
               )}
 
               {activeTab === 'vouchers' && (
-                <VouchersSiscontView
+                <VouchersView
                   empresaId={empresaActivaId}
                   periodo={periodo}
                   isPeriodoCerrado={isPeriodoCerrado}
@@ -531,7 +531,7 @@ function AppContent({
                 />
               )}
 
-              {activeTab === 'sire_smart' && (
+              {activeTab === 'sire_conciliacion' && (
                 <SireConciliadorView
                   compras={compras}
                   empresa={empresaActiva}
@@ -597,7 +597,7 @@ function AppContent({
               )}
 
               {activeTab === 'maestros' && (
-                <MaestrosSiscontView />
+                <MaestrosView />
               )}
 
               {activeTab === 'reglas' && (
@@ -646,7 +646,7 @@ function AppContent({
         />
       )}
 
-      {/* Modal: Importación CSV/Excel */}
+      {/* Modal: Importación CSV / hoja de cálculo */}
       <ModalImportacionCsv
         isOpen={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
@@ -655,7 +655,7 @@ function AppContent({
         }}
       />
 
-      {/* Modal: Copias de Seguridad por Empresa (SISCONT) */}
+      {/* Modal: Copias de seguridad por empresa */}
       <ModalBackupEmpresa
         isOpen={isBackupModalOpen}
         onClose={() => setIsBackupModalOpen(false)}

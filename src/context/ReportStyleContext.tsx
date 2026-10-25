@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-export type ReportStyle = 'siscont' | 'actual';
+export type ReportStyle = 'estandar' | 'actual';
+export const REPORT_STYLE: ReportStyle = 'estandar';
 
 interface ReportStyleContextType {
   reportStyle: ReportStyle;
@@ -18,7 +19,7 @@ const FECHA_HORA_STORAGE_KEY = 'sunaconta_report_show_datetime';
 export const ReportStyleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [reportStyle, setReportStyleState] = useState<ReportStyle>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
-    return (saved === 'actual' || saved === 'siscont') ? saved : 'siscont';
+    return (saved === 'actual' || saved === 'estandar') ? saved : REPORT_STYLE;
   });
 
   const [mostrarFechaHoraImpresion, setMostrarFechaHoraImpresionState] = useState<boolean>(() => {
@@ -31,7 +32,7 @@ export const ReportStyleProvider: React.FC<{ children: React.ReactNode }> = ({ c
   };
 
   const toggleReportStyle = () => {
-    const nextStyle: ReportStyle = reportStyle === 'siscont' ? 'actual' : 'siscont';
+    const nextStyle: ReportStyle = reportStyle === 'estandar' ? 'actual' : 'estandar';
     setReportStyle(nextStyle);
   };
 

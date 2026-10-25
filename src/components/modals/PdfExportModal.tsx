@@ -20,9 +20,9 @@ import {
 } from '../../services/pdfExportService';
 import { useReportStyle } from '../../context/ReportStyleContext';
 import { 
-  exportarReporteSiscontPdf, 
-  construirDefinicionRegistroComprasSiscont 
-} from '../../services/reports/siscontFormatEngine';
+  exportarReporteEstandarPdf,
+  construirDefinicionRegistroComprasEstandar
+} from '../../services/reports/formato_estandar/formatoEstandarEngine';
 
 export type TipoReportePdf = 'COMPRAS' | 'VENTAS' | 'DIARIO' | 'HONORARIOS';
 
@@ -63,8 +63,8 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
     setTimeout(() => {
       try {
         if (tipoReporte === 'COMPRAS') {
-          if (reportStyle === 'siscont') {
-            exportarReporteSiscontPdf(construirDefinicionRegistroComprasSiscont(empresa, compras, periodo));
+          if (reportStyle === 'estandar') {
+            exportarReporteEstandarPdf(construirDefinicionRegistroComprasEstandar(empresa, compras, periodo));
           } else {
             exportarRegistroComprasPdf(empresa, compras, periodo);
           }
@@ -168,12 +168,12 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
                 <div className="flex bg-white rounded-xl border border-slate-200 p-0.5">
                   <button
                     type="button"
-                    onClick={() => setReportStyle('siscont')}
+                    onClick={() => setReportStyle('estandar')}
                     className={`flex-1 py-1 px-1.5 rounded-lg text-[10px] font-bold transition cursor-pointer ${
-                      reportStyle === 'siscont' ? 'bg-black text-white' : 'text-slate-600 hover:text-slate-900'
+                      reportStyle === 'estandar' ? 'bg-black text-white' : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    SISCONT (B/N)
+                    Estándar (B/N)
                   </button>
                   <button
                     type="button"

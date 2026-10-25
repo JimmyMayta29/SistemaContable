@@ -1,10 +1,10 @@
 import { generarSireRceTxt } from '../../src/services/sireTxtGenerator';
-import { construirDefinicionRegistroComprasSiscont } from '../../src/services/reports/siscontFormatEngine';
+import { construirDefinicionRegistroComprasEstandar } from '../../src/services/reports/formato_estandar/formatoEstandarEngine';
 import { EMPRESAS_CLIENTES_DEMO, crearDatosInicialesEmpresa } from '../../src/data/empresasClientes';
 
 function runVerificacionReportes() {
   console.log('================================================================');
-  console.log('🔍 VERIFICACIÓN DE PARIDAD: FORMATO ACTUAL VS FORMATO SISCONT');
+  console.log('🔍 VERIFICACIÓN DE PARIDAD: FORMATO ACTUAL VS FORMATO ESTANDAR');
   console.log('================================================================\n');
 
   const empresa = EMPRESAS_CLIENTES_DEMO[0];
@@ -21,27 +21,27 @@ function runVerificacionReportes() {
   const actualTotalNoGrav = compras.reduce((acc, c) => acc + (c.adquisicionesNoGravadas || 0), 0);
   const actualTotalGeneral = compras.reduce((acc, c) => acc + c.total, 0);
 
-  // 2. Totales generados por el motor SISCONT
-  const defSiscont = construirDefinicionRegistroComprasSiscont(empresa, compras, periodo);
-  const siscontTotalBase = defSiscont.totalesGenerales.baseA;
-  const siscontTotalIgv = defSiscont.totalesGenerales.igvA;
-  const siscontTotalNoGrav = defSiscont.totalesGenerales.adqNoGrav;
-  const siscontTotalGeneral = defSiscont.totalesGenerales.total;
+  // 2. Totales generados por el motor ESTANDAR
+  const defEstandar = construirDefinicionRegistroComprasEstandar(empresa, compras, periodo);
+  const estandarTotalBase = defEstandar.totalesGenerales.baseA;
+  const estandarTotalIgv = defEstandar.totalesGenerales.igvA;
+  const estandarTotalNoGrav = defEstandar.totalesGenerales.adqNoGrav;
+  const estandarTotalGeneral = defEstandar.totalesGenerales.total;
 
   console.log('----------------------------------------------------------------');
   console.log('TABLA COMPARATIVA DE TOTALES (DIFERENCIA EXACTA):');
   console.log('----------------------------------------------------------------');
-  console.log(`Concepto               | Formato Actual (S/) | Formato SISCONT (S/) | Diferencia`);
-  console.log(`Base Imponible (Base A)| ${actualTotalBase.toFixed(2).padStart(19)} | ${siscontTotalBase.toFixed(2).padStart(20)} | ${(actualTotalBase - siscontTotalBase).toFixed(2)}`);
-  console.log(`I.G.V. 18%             | ${actualTotalIgv.toFixed(2).padStart(19)} | ${siscontTotalIgv.toFixed(2).padStart(20)} | ${(actualTotalIgv - siscontTotalIgv).toFixed(2)}`);
-  console.log(`Adq. no Gravadas       | ${actualTotalNoGrav.toFixed(2).padStart(19)} | ${siscontTotalNoGrav.toFixed(2).padStart(20)} | ${(actualTotalNoGrav - siscontTotalNoGrav).toFixed(2)}`);
-  console.log(`TOTAL GENERAL          | ${actualTotalGeneral.toFixed(2).padStart(19)} | ${siscontTotalGeneral.toFixed(2).padStart(20)} | ${(actualTotalGeneral - siscontTotalGeneral).toFixed(2)}`);
+  console.log(`Concepto               | Formato Actual (S/) | Formato ESTANDAR (S/) | Diferencia`);
+  console.log(`Base Imponible (Base A)| ${actualTotalBase.toFixed(2).padStart(19)} | ${estandarTotalBase.toFixed(2).padStart(20)} | ${(actualTotalBase - estandarTotalBase).toFixed(2)}`);
+  console.log(`I.G.V. 18%             | ${actualTotalIgv.toFixed(2).padStart(19)} | ${estandarTotalIgv.toFixed(2).padStart(20)} | ${(actualTotalIgv - estandarTotalIgv).toFixed(2)}`);
+  console.log(`Adq. no Gravadas       | ${actualTotalNoGrav.toFixed(2).padStart(19)} | ${estandarTotalNoGrav.toFixed(2).padStart(20)} | ${(actualTotalNoGrav - estandarTotalNoGrav).toFixed(2)}`);
+  console.log(`TOTAL GENERAL          | ${actualTotalGeneral.toFixed(2).padStart(19)} | ${estandarTotalGeneral.toFixed(2).padStart(20)} | ${(actualTotalGeneral - estandarTotalGeneral).toFixed(2)}`);
   console.log('----------------------------------------------------------------\n');
 
-  const difBase = Math.abs(actualTotalBase - siscontTotalBase);
-  const difIgv = Math.abs(actualTotalIgv - siscontTotalIgv);
-  const difNoGrav = Math.abs(actualTotalNoGrav - siscontTotalNoGrav);
-  const difTotal = Math.abs(actualTotalGeneral - siscontTotalGeneral);
+  const difBase = Math.abs(actualTotalBase - estandarTotalBase);
+  const difIgv = Math.abs(actualTotalIgv - estandarTotalIgv);
+  const difNoGrav = Math.abs(actualTotalNoGrav - estandarTotalNoGrav);
+  const difTotal = Math.abs(actualTotalGeneral - estandarTotalGeneral);
 
   if (difBase === 0 && difIgv === 0 && difNoGrav === 0 && difTotal === 0) {
     console.log('✅ [PASÓ] Paridad de totales 100% exacta. Diferencia = S/ 0.00 en todas las columnas.\n');
@@ -66,15 +66,15 @@ function runVerificacionReportes() {
     process.exit(1);
   }
 
-  // 4. Verificación de estructura de grupos SISCONT
+  // 4. Verificación de estructura de grupos ESTANDAR
   console.log('----------------------------------------------------------------');
-  console.log('VERIFICACIÓN DE ESTRUCTURA Y GRUPOS FORMATO SISCONT:');
+  console.log('VERIFICACIÓN DE ESTRUCTURA Y GRUPOS FORMATO ESTANDAR:');
   console.log('----------------------------------------------------------------');
-  console.log(`Total grupos formados: ${defSiscont.grupos.length}`);
-  defSiscont.grupos.forEach((g) => {
+  console.log(`Total grupos formados: ${defEstandar.grupos.length}`);
+  defEstandar.grupos.forEach((g) => {
     console.log(` - ${g.tituloGrupo} (${g.filas.length} comprobantes) | Subtotal: S/ ${g.totalesGrupo.total.toFixed(2)}`);
   });
-  console.log(`Columnas configuradas: ${defSiscont.columnas.length} (Cumple con las 22 columnas SISCONT)`);
+  console.log(`Columnas configuradas: ${defEstandar.columnas.length} (Cumple con las 22 columnas ESTANDAR)`);
   console.log('✅ [PASÓ] Estructura tabular y subtotales por grupo validados.\n');
 
   console.log('================================================================');

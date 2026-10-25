@@ -351,7 +351,7 @@ export const asientoController = {
     }
   },
 
-  async obtenerLibroDiarioSISCONT(req: Request, res: Response) {
+  async obtenerLibroDiarioESTANDAR(req: Request, res: Response) {
     try {
       const empresaId = req.params.id || req.params.empresaId || req.empresaId!;
       const periodo = (req.query.periodo as string) || '2026-09';
@@ -360,7 +360,7 @@ export const asientoController = {
       const voucherDesde = req.query.voucherDesde as string;
       const voucherHasta = req.query.voucherHasta as string;
 
-      const diario = await librosEEFFService.generarLibroDiarioSISCONT(empresaId, periodo, {
+      const diario = await librosEEFFService.generarLibroDiarioESTANDAR(empresaId, periodo, {
         incluirAjustesYCierre: incluirCierre,
         formatoFecha,
         voucherDesde,

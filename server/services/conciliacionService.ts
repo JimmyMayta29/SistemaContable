@@ -51,7 +51,7 @@ export const CONCILIACIONES_MEMORIA: ConciliacionPeriodoModel[] = [];
 
 export const conciliacionService = {
   // --------------------------------------------------------------------------
-  // IMPORTACIÓN DE EXTRACTO BANCARIO (CSV / EXCEL)
+  // IMPORTACIÓN DE EXTRACTO BANCARIO (CSV / HOJA DE CÁLCULO)
   // --------------------------------------------------------------------------
   async importarExtracto(
     empresaId: string,

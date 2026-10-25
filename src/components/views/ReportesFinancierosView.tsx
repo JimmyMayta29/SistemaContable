@@ -38,7 +38,7 @@ export const ReportesFinancierosView: React.FC<ReportesFinancierosViewProps> = (
           }`}
         >
           <Table className="w-4 h-4" />
-          Hoja de Trabajo 10 Columnas (SISCONT)
+          Hoja de Trabajo 10 Columnas
         </button>
         <button
           onClick={() => setActiveReportTab('BALANCE_GENERAL')}

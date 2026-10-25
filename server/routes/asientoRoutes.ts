@@ -40,11 +40,11 @@ router.get('/empresas/:id/ratios-financieros', requireEmpresaMembership(), asien
 router.post('/empresas/:id/reconstruir-saldos', requireEmpresaMembership(['ADMIN_ESTUDIO', 'CONTADOR']), asientoController.reconstruirSaldos);
 router.get('/empresas/:id/verificar-saldos', requireEmpresaMembership(), asientoController.verificarSaldos);
 
-// Reportes Oficiales Especializados (Fase 7C-2 / SISCONT)
+// Reportes Oficiales Especializados (Fase 7C-2 / ESTANDAR)
 router.get('/empresas/:id/reportes/hoja-trabajo-10-columnas', requireEmpresaMembership(), asientoController.obtenerHojaTrabajo10Columnas);
 router.get('/empresas/:id/hoja-trabajo-10-columnas', requireEmpresaMembership(), asientoController.obtenerHojaTrabajo10Columnas);
-router.get('/empresas/:id/reportes/libro-diario-estructurado', requireEmpresaMembership(), asientoController.obtenerLibroDiarioSISCONT);
-router.get('/empresas/:id/libro-diario-siscont', requireEmpresaMembership(), asientoController.obtenerLibroDiarioSISCONT);
+router.get('/empresas/:id/reportes/libro-diario-estructurado', requireEmpresaMembership(), asientoController.obtenerLibroDiarioESTANDAR);
+router.get('/empresas/:id/libro-diario-estandar', requireEmpresaMembership(), asientoController.obtenerLibroDiarioESTANDAR);
 router.get('/empresas/:id/reportes/ple-5-1-diario', requireEmpresaMembership(), asientoController.descargarPle51Diario);
 
 export const asientoRoutes = router;

@@ -42,7 +42,7 @@ export type TabIdNivel2 =
   | 'mayor'
   | 'balance_comprobacion'
   | 'destinos_dc'
-  | 'sire_smart'
+  | 'sire_conciliacion'
   | 'sire_sync'
   | 'ple'
   | 'pdt621'
@@ -257,7 +257,7 @@ export const EmpresaSidebarNivel2: React.FC<EmpresaSidebarNivel2Props> = ({
               >
                 <div className="flex items-center gap-2">
                   <BookOpen className="w-4 h-4 text-slate-500" />
-                  <span>Vouchers Siscont</span>
+                  <span>Vouchers</span>
                 </div>
                 {pendientesVouchers > 0 && (
                   <span className="px-1.5 py-0.2 bg-amber-100 text-amber-800 text-[10px] font-bold rounded-full">
@@ -330,9 +330,9 @@ export const EmpresaSidebarNivel2: React.FC<EmpresaSidebarNivel2Props> = ({
           {openGroups.sunat && (
             <div className="space-y-0.5 mt-1">
               <button
-                onClick={() => onSelectTab('sire_smart')}
+                onClick={() => onSelectTab('sire_conciliacion')}
                 className={`w-full flex items-center justify-between px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
-                  activeTab === 'sire_smart' ? 'bg-blue-50 text-blue-800 font-bold' : 'text-slate-600 hover:bg-slate-50'
+                  activeTab === 'sire_conciliacion' ? 'bg-blue-50 text-blue-800 font-bold' : 'text-slate-600 hover:bg-slate-50'
                 }`}
               >
                 <div className="flex items-center gap-2">

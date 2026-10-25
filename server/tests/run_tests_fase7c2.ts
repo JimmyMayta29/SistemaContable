@@ -4,7 +4,7 @@ import { periodoService } from '../services/periodoService';
 
 async function ejecutarSuiteFase7C2() {
   console.log('========================================================================');
-  console.log('🧪 SUITE DE PRUEBAS AUTOMATIZADAS — FASE 7C-2: REPORTES TIPO SISCONT');
+  console.log('🧪 SUITE DE PRUEBAS AUTOMATIZADAS — FASE 7C-2: REPORTES TIPO ESTANDAR');
   console.log('   (HOJA DE TRABAJO 10 COLUMNAS & LIBRO DIARIO ESTRUCTURADO)');
   console.log('========================================================================\n');
 
@@ -268,11 +268,11 @@ async function ejecutarSuiteFase7C2() {
   }
 
   // --------------------------------------------------------------------------
-  // TEST 4: Libro Diario SISCONT — Estructura Jerárquica & Subdiarios
+  // TEST 4: Libro Diario ESTANDAR — Estructura Jerárquica & Subdiarios
   // --------------------------------------------------------------------------
-  console.log('🔹 Test 4: Libro Diario SISCONT — Estructura Jerárquica & Subdiarios');
+  console.log('🔹 Test 4: Libro Diario ESTANDAR — Estructura Jerárquica & Subdiarios');
   {
-    const diario = await librosEEFFService.generarLibroDiarioSISCONT(EMPRESA_TEST, PERIODO_TEST, {
+    const diario = await librosEEFFService.generarLibroDiarioESTANDAR(EMPRESA_TEST, PERIODO_TEST, {
       incluirAjustesYCierre: true,
       formatoFecha: 'DD/MM/AAAA'
     });
@@ -294,7 +294,7 @@ async function ejecutarSuiteFase7C2() {
   // --------------------------------------------------------------------------
   console.log('🔹 Test 5: Consistencia Absoluta: Total Diario == Total Hoja de Trabajo');
   {
-    const diario = await librosEEFFService.generarLibroDiarioSISCONT(EMPRESA_TEST, PERIODO_TEST, {
+    const diario = await librosEEFFService.generarLibroDiarioESTANDAR(EMPRESA_TEST, PERIODO_TEST, {
       incluirAjustesYCierre: true
     });
     const hoja = await librosEEFFService.generarHojaTrabajo10Columnas(EMPRESA_TEST, PERIODO_TEST, {
@@ -317,7 +317,7 @@ async function ejecutarSuiteFase7C2() {
   // --------------------------------------------------------------------------
   console.log('🔹 Test 6: Consistencia del Libro Diario con el Archivo Oficial PLE 5.1');
   {
-    const diario = await librosEEFFService.generarLibroDiarioSISCONT(EMPRESA_TEST, PERIODO_TEST);
+    const diario = await librosEEFFService.generarLibroDiarioESTANDAR(EMPRESA_TEST, PERIODO_TEST);
     const ple = await librosEEFFService.generarPle51DiarioTxt(EMPRESA_TEST, PERIODO_TEST);
 
     assert(ple.contenidoTxt.length > 0, 'Archivo PLE 5.1 generado con contenido válido');
@@ -335,13 +335,13 @@ async function ejecutarSuiteFase7C2() {
   // --------------------------------------------------------------------------
   console.log('🔹 Test 7: Opciones y Filtros del Libro Diario');
   {
-    const diarioSinCierre = await librosEEFFService.generarLibroDiarioSISCONT(EMPRESA_TEST, PERIODO_TEST, {
+    const diarioSinCierre = await librosEEFFService.generarLibroDiarioESTANDAR(EMPRESA_TEST, PERIODO_TEST, {
       incluirAjustesYCierre: false
     });
     const tieneSub00 = diarioSinCierre.subdiarios.some(s => s.codigo === '00' || s.codigo === '09');
     assert(!tieneSub00, 'Subdiarios 00 y 09 excluidos exitosamente con el interruptor');
 
-    const diarioFechaDma = await librosEEFFService.generarLibroDiarioSISCONT(EMPRESA_TEST, PERIODO_TEST, {
+    const diarioFechaDma = await librosEEFFService.generarLibroDiarioESTANDAR(EMPRESA_TEST, PERIODO_TEST, {
       formatoFecha: 'DD/MM/AAAA'
     });
     const fechaEjemplo = diarioFechaDma.subdiarios[0].vouchers[0].fecha;

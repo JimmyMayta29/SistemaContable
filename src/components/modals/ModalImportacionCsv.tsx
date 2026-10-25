@@ -227,7 +227,7 @@ export const ModalImportacionCsv: React.FC<ModalImportacionCsvProps> = ({
               <FileSpreadsheet className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-base leading-tight">Motor de Importación de Datos (CSV / Excel)</h3>
+              <h3 className="font-bold text-base leading-tight">Importación de datos (CSV / hoja de cálculo)</h3>
               <p className="text-xs text-slate-300">
                 Empresa: <span className="text-white font-semibold">{empresaActiva?.razonSocial || 'Empresa Activa'}</span>
               </p>

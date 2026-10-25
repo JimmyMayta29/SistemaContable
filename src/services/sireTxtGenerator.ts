@@ -123,7 +123,7 @@ export function generarSireRvieTxt(ruc: string, periodo: string, comprobantes: C
 }
 
 /**
- * Exporta a CSV descargable para abrir inmediatamente en Microsoft Excel
+ * Exporta a CSV descargable para abrir inmediatamente en una hoja de cálculo
  */
 export function exportarComprobantesCsv(comprobantes: Comprobante[], tipo: 'COMPRAS' | 'VENTAS'): string {
   const encabezados = [

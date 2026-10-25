@@ -8,7 +8,7 @@
 
 ## 1. RESUMEN EJECUTIVO
 
-El sistema es una plataforma integral de gestión contable, tributaria y financiera adaptada estrictamente al marco normativo peruano (PCGE 2020, NIIF, Ley de Impuesto a la Renta, Ley del IGV y resoluciones de superintendencia de la SUNAT). Su alcance abarca la contabilidad multiempresa para estudios contables, automatización de compras y ventas, conciliación inteligente SIRE (RCE/RVIE), emisión de libros electrónicos PLE, liquidación de planilla/PLAME, activos fijos con depreciación dual (NIC 16 vs LIR), kardex valorado promedio móvil (13.1), auditoría preventiva y reportes financieros tipo SISCONT. El stack está compuesto por React 19, TypeScript, Tailwind CSS y Vite en el frontend, y Node.js (v22), Express, TypeScript y PostgreSQL 15 (con emulación pg-mem en test) en el backend. Su modelo de despliegue contempla operación en la nube (Docker / Cloud Run) y arquitectura desacoplada lista para cliente de escritorio (Tauri/Electron).
+El sistema es una plataforma integral de gestión contable, tributaria y financiera adaptada estrictamente al marco normativo peruano (PCGE 2020, NIIF, Ley de Impuesto a la Renta, Ley del IGV y resoluciones de superintendencia de la SUNAT). Su alcance abarca la contabilidad multiempresa para estudios contables, automatización de compras y ventas, conciliación inteligente SIRE (RCE/RVIE), emisión de libros electrónicos PLE, liquidación de planilla/PLAME, activos fijos con depreciación dual (NIC 16 vs LIR), kardex valorado promedio móvil (13.1), auditoría preventiva y reportes financieros tipo ESTANDAR. El stack está compuesto por React 19, TypeScript, Tailwind CSS y Vite en el frontend, y Node.js (v22), Express, TypeScript y PostgreSQL 15 (con emulación pg-mem en test) en el backend. Su modelo de despliegue contempla operación en la nube (Docker / Cloud Run) y arquitectura desacoplada lista para cliente de escritorio.
 
 ### Estado General del Sistema
 - **Batería de Pruebas Automatizadas:** 12 suites ejecutadas, 426 aserciones aprobadas, 0 fallos (tiempo total: 22.23s).
@@ -49,7 +49,7 @@ El sistema es una plataforma integral de gestión contable, tributaria y financi
 │   ├── context/                        # Contextos de React (EmpresaContext, AuthContext, ToastContext)
 │   ├── data/                           # Catálogos maestros PCGE 2020 y empresas de prueba
 │   ├── hooks/                          # Custom hooks con TanStack React Query
-│   ├── services/                       # Motores de cálculo en cliente (siscontReportsEngine, reportes)
+│   ├── services/                       # Motores de cálculo en cliente (reportesEngine, reportes)
 │   └── types/                          # Interfaces y contratos de datos TypeScript compartidos
 ├── package.json                        # Definición de dependencias, scripts de prueba y build
 ├── server.ts                           # Punto de entrada del servidor backend Express con middleware Vite
@@ -208,16 +208,16 @@ El sistema es una plataforma integral de gestión contable, tributaria y financi
 - **Selector Rápido de Empresas con Atajo de Teclado Ctrl+K / Cmd+K:** `src/components/layout/EmpresaSelectorModal.tsx`. Prueba: `run_tests_fase7b.ts` (Test 2). Estado: `IMPLEMENTADO Y PROBADO`.
 - **Limpieza e Invalidación Atómica de Caché en TanStack Query:** `src/context/EmpresaContext.tsx`. Prueba: `run_tests_fase7b.ts` (Test 3). Estado: `IMPLEMENTADO Y PROBADO`.
 - **Banner Visual de Período Cerrado con Bloqueo de Acciones en UI:** `src/components/layout/PeriodoStatusBar.tsx`. Prueba: `run_tests_fase7b.ts` (Test 4). Estado: `IMPLEMENTADO Y PROBADO`.
-- **Navegación Cruzada y Trazabilidad (Comprobante -> Voucher -> Mayor):** `src/components/views/RegistroComprasView.tsx`, `src/components/views/VouchersSiscontView.tsx`. Prueba: `run_tests_fase7b.ts` (Test 5). Estado: `IMPLEMENTADO Y PROBADO`.
-- **Preparación de Arquitectura Frontend para Escritorio:** `src/api/client.ts`, `src/services/siscontReportsEngine.ts`. Estado: `IMPLEMENTADO SIN PRUEBA`.
+- **Navegación Cruzada y Trazabilidad (Comprobante -> Voucher -> Mayor):** `src/components/views/RegistroComprasView.tsx`, `src/components/views/VouchersView.tsx`. Prueba: `run_tests_fase7b.ts` (Test 5). Estado: `IMPLEMENTADO Y PROBADO`.
+- **Preparación de Arquitectura Frontend para Escritorio:** `src/api/client.ts`, `src/services/reportesEngine.ts`. Estado: `IMPLEMENTADO SIN PRUEBA`.
 
-### Fase 7C y 7C-2: Motor de Reportes Oficiales Tipo SISCONT
+### Fase 7C y 7C-2: Motor de Reportes Oficiales Tipo ESTANDAR
 - **Hoja de Trabajo 10 Columnas con Encabezado Legal y 5 Controles de Cuadre:** `server/services/librosEEFFService.ts`, `src/components/views/HojaTrabajo10ColumnasView.tsx`. Prueba: `server/tests/run_tests_fase7c2.ts` (Test 1). Estado: `IMPLEMENTADO Y PROBADO`.
 - **Alerta Roja por Discrepancia entre Naturaleza y Función:** `server/services/librosEEFFService.ts`. Prueba: `run_tests_fase7c2.ts` (Test 2). Estado: `IMPLEMENTADO Y PROBADO`.
 - **Regla Configurable de Cuentas Correctoras de Activo (19, 29, 39 en Negativo vs Pasivo):** `server/services/librosEEFFService.ts`. Prueba: `run_tests_fase7c2.ts` (Test 3). Estado: `IMPLEMENTADO Y PROBADO`.
 - **Libro Diario Estructurado por Subdiario con CUO y Consistencia PLE 5.1:** `server/services/librosEEFFService.ts`, `src/components/views/LibroDiarioView.tsx`. Prueba: `run_tests_fase7c2.ts` (Test 4 y 6). Estado: `IMPLEMENTADO Y PROBADO`.
 - **Consistencia Matemática Absoluta Total Diario == Total Hoja de Trabajo:** `server/services/librosEEFFService.ts`. Prueba: `run_tests_fase7c2.ts` (Test 5). Estado: `IMPLEMENTADO Y PROBADO`.
-- **Interruptores de Impresión/Exportación (Fecha, Usuario, Página, Salto Subdiario):** `src/services/siscontReportsEngine.ts`. Prueba: `run_tests_fase7c2.ts` (Test 7). Estado: `IMPLEMENTADO Y PROBADO`.
+- **Interruptores de Impresión/Exportación (Fecha, Usuario, Página, Salto Subdiario):** `src/services/reportesEngine.ts`. Prueba: `run_tests_fase7c2.ts` (Test 7). Estado: `IMPLEMENTADO Y PROBADO`.
 - **Doble Clic Interactivo en Cuentas (Mayor) y Vouchers (Asiento):** `src/components/views/HojaTrabajo10ColumnasView.tsx`, `src/components/views/LibroDiarioView.tsx`. Estado: `IMPLEMENTADO Y PROBADO` (*en código fuente frontend*).
 
 ---
@@ -291,7 +291,7 @@ Todos los endpoints exigen autenticación JWT válida (`requireAuth`) y membres�
 - `POST /api/periodos/:id/cerrar`: Cierre de período. Rol mínimo: CONTADOR. Auditable.
 - `POST /api/periodos/:id/reabrir`: Reapertura excepcional. Rol mínimo: ADMIN_ESTUDIO. Auditable.
 - `GET /api/empresas/:id/reportes/hoja-trabajo-10-columnas`: Generación de Hoja de Trabajo 10 Columnas.
-- `GET /api/empresas/:id/reportes/libro-diario-estructurado`: Generación de Libro Diario SISCONT.
+- `GET /api/empresas/:id/reportes/libro-diario-estructurado`: Generación de Libro Diario ESTANDAR.
 - `GET /api/empresas/:id/reportes/ple-5-1-diario`: Descarga directa de archivo plano para SUNAT PLE 5.1.
 
 ---
@@ -303,9 +303,9 @@ Todos los endpoints exigen autenticación JWT válida (`requireAuth`) y membres�
 - `/e/:empresaId/dashboard`: Resumen financiero, obligaciones tributarias y estado del período.
 - `/e/:empresaId/compras`: Registro de Compras (`RegistroComprasView.tsx`). Totalmente funcional con cálculo de IGV, detracción y asientos automáticos.
 - `/e/:empresaId/ventas`: Registro de Ventas (`RegistroVentasView.tsx`). Funcional con cálculo de tributos y series electrónicas.
-- `/e/:empresaId/vouchers`: Libro Diario y Vouchers SISCONT (`VouchersSiscontView.tsx`, `LibroDiarioView.tsx`).
+- `/e/:empresaId/vouchers`: Libro Diario y Vouchers ESTANDAR (`VouchersView.tsx`, `LibroDiarioView.tsx`).
 - `/e/:empresaId/mayor`: Libro Mayor interactivo por cuenta (`LibroMayorView.tsx`).
-- `/e/:empresaId/balance-comprobacion`: Hoja de Trabajo de 10 Columnas oficial SISCONT (`HojaTrabajo10ColumnasView.tsx`).
+- `/e/:empresaId/balance-comprobacion`: Hoja de Trabajo de 10 Columnas oficial ESTANDAR (`HojaTrabajo10ColumnasView.tsx`).
 - `/e/:empresaId/sire`: Conciliador Inteligente SIRE (`SireConciliadorView.tsx`). Conciliación en 7 estados.
 - `/e/:empresaId/cierre`: Procesos de cierre mensual y anual (`ProcesosCierreView.tsx`).
 - `/e/:empresaId/reportes`: Centro de Reportes Financieros (`ReportesFinancierosView.tsx`).
@@ -320,12 +320,12 @@ Todos los endpoints exigen autenticación JWT válida (`requireAuth`) y membres�
 
 | Reporte | Agrupación | Formatos | Totales / Cuadre | Estado |
 | :--- | :--- | :--- | :--- | :--- |
-| **Hoja de Trabajo 10 Columnas** | Por código PCGE a nivel de subcuenta | Pantalla, PDF, Excel | 5 controles de cuadre, fila equilibradora, sumas iguales | `IMPLEMENTADO Y PROBADO` |
-| **Libro Diario Estructurado 5.1** | Subdiario → Voucher → Líneas | Pantalla, PDF, Excel, PLE (TXT) | Total comprobante, total subdiario, total general | `IMPLEMENTADO Y PROBADO` |
-| **Registro de Compras 8.1 / 8.4** | Cronológico por comprobante | Pantalla, Excel, PLE (TXT) | Base gravada, IGV, no gravadas, otros, total | `IMPLEMENTADO Y PROBADO` |
-| **Registro de Ventas 14.1 / 14.4** | Cronológico por serie y correlativo | Pantalla, Excel, PLE (TXT) | Base gravada, exonerada, inafecta, IGV, total | `IMPLEMENTADO Y PROBADO` |
-| **Libro Mayor** | Por cuenta contable | Pantalla, PDF, Excel | Sumas Debe/Haber y saldos Deudor/Acreedor | `IMPLEMENTADO Y PROBADO` |
-| **Balance de Comprobación** | Por dígitos de cuenta | Pantalla, PDF, Excel | Sumas de mayor y saldos | `IMPLEMENTADO Y PROBADO` |
+| **Hoja de Trabajo 10 Columnas** | Por código PCGE a nivel de subcuenta | Pantalla, PDF, hoja de cálculo | 5 controles de cuadre, fila equilibradora, sumas iguales | `IMPLEMENTADO Y PROBADO` |
+| **Libro Diario Estructurado 5.1** | Subdiario → Voucher → Líneas | Pantalla, PDF, hoja de cálculo, PLE (TXT) | Total comprobante, total subdiario, total general | `IMPLEMENTADO Y PROBADO` |
+| **Registro de Compras 8.1 / 8.4** | Cronológico por comprobante | Pantalla, hoja de cálculo, PLE (TXT) | Base gravada, IGV, no gravadas, otros, total | `IMPLEMENTADO Y PROBADO` |
+| **Registro de Ventas 14.1 / 14.4** | Cronológico por serie y correlativo | Pantalla, hoja de cálculo, PLE (TXT) | Base gravada, exonerada, inafecta, IGV, total | `IMPLEMENTADO Y PROBADO` |
+| **Libro Mayor** | Por cuenta contable | Pantalla, PDF, hoja de cálculo | Sumas Debe/Haber y saldos Deudor/Acreedor | `IMPLEMENTADO Y PROBADO` |
+| **Balance de Comprobación** | Por dígitos de cuenta | Pantalla, PDF, hoja de cálculo | Sumas de mayor y saldos | `IMPLEMENTADO Y PROBADO` |
 | **Estado de Situación Financiera** | Activo vs Pasivo y Patrimonio | Pantalla, PDF | Ecuación contable Activo = Pasivo + Patrimonio | `IMPLEMENTADO Y PROBADO` |
 | **Estado de Resultados** | Por Naturaleza y Función | Pantalla, PDF | Utilidad/pérdida antes y después de impuestos | `IMPLEMENTADO Y PROBADO` |
 | **Libro de Caja y Bancos (1.1/1.2)**| Por cuenta y medio de pago | PLE (TXT) | Saldo inicial, entradas, salidas, saldo final | `IMPLEMENTADO SIN PRUEBA` |
@@ -395,7 +395,7 @@ Todos los endpoints exigen autenticación JWT válida (`requireAuth`) y membres�
 5. **Completar Suites de Prueba para PLE 1.1, 1.2 y 3.1:** Incorporar aserciones en `run_tests_fase5.ts` para verificar libros de caja/bancos e inventarios/balances. *(Esfuerzo: S)*
 6. **Conector a Almacenamiento Externo de Adjuntos (S3 / Cloud Storage):** Migrar almacenamiento de XML/PDF desde base de datos hacia buckets con URLs firmadas y cifrado en reposo. *(Esfuerzo: M)*
 7. **Pruebas End-to-End en Navegador Headless (Playwright):** Automatizar flujos de usuario de navegación por empresa, cuadre visual de reportes y exportación. *(Esfuerzo: L)*
-8. **Empaquetado de Aplicación de Escritorio con Tauri:** Compilar cliente liviano nativo Windows/macOS/Linux reutilizando el build web existente. *(Esfuerzo: M)*
+8. **Empaquetado de Aplicación de Escritorio:** Compilar cliente liviano nativo multiplataforma reutilizando el build web existente. *(Esfuerzo: M)*
 9. **Validación Integral de Homologación SIRE en Servidores SUNAT:** Ejecutar pruebas de certificación de tickets con el servicio Web API de SUNAT con credenciales reales de contribuyente. *(Esfuerzo: L)*
 10. **Tablas de Índices de Ajuste por Inflación (REI):** Preparar módulo de ajuste por inflación para ejercicios con alta variación del IPM/IPC. *(Esfuerzo: M)*
 

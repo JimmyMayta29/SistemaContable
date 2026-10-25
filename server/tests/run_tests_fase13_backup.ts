@@ -11,7 +11,7 @@ import { empresaRepository, EMPRESAS_STORE } from '../repositories/empresaReposi
 
 async function ejecutarSuiteFase13Backup() {
   console.log('========================================================================');
-  console.log('🧪 SUITE DE PRUEBAS AUTOMATIZADAS — FASE 13: BACKUP POR EMPRESA (SISCONT)');
+  console.log('🧪 SUITE DE PRUEBAS AUTOMATIZADAS — FASE 13: BACKUP POR EMPRESA (ESTANDAR)');
   console.log('   (Cifrado AES-256-GCM, Aislamiento, Integridad, Rotación & Restauración)');
   console.log('========================================================================\n');
 
@@ -91,7 +91,7 @@ async function ejecutarSuiteFase13Backup() {
   const backupGenerado = await backupEmpresaService.generarBackupZip(EMPRESA_DEMO_ID, 'MANUAL', 'usr-admin-01');
   {
     testAssert(backupGenerado.id.startsWith('bkp-'), 'Backup recibe identificador único');
-    testAssert(backupGenerado.nombreArchivo.startsWith('20000000001_2026_'), 'Nombre de archivo conforme a nomenclatura SISCONT: {RUC}_{EJERCICIO}_{FECHA}.zip');
+    testAssert(backupGenerado.nombreArchivo.startsWith('20000000001_2026_'), 'Nombre de archivo conforme a nomenclatura ESTANDAR: {RUC}_{EJERCICIO}_{FECHA}.zip');
     testAssert(backupGenerado.tamanoBytes > 500, 'Tamaño de archivo cifrado válido (> 500 bytes)');
     testAssert(backupGenerado.hashSha256.length === 64, 'Checksum SHA-256 calculado (64 caracteres)');
     testAssert(backupGenerado.archivoZipBuffer !== undefined, 'Buffer binario generado correctamente');

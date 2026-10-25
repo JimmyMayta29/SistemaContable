@@ -1,5 +1,5 @@
 {
-  "summary":  "Plan detallado para la implementacion del Motor Unico de Reportes Formato SISCONT (Fase 1: Motor y Registro de Compras) con interruptor global REPORT_STYLE, especificacion visual estricta en blanco y negro, y exportacion a PDF y Excel sin alterar logica contable ni archivos PLE/SIRE.",
+  "summary":  "Plan detallado para la implementacion del Motor Unico de Reportes Formato ESTANDAR (Fase 1: Motor y Registro de Compras) con interruptor global REPORT_STYLE, especificacion visual estricta en blanco y negro, y exportacion a PDF y hoja de cálculo sin alterar logica contable ni archivos PLE/SIRE.",
   "updatedAt":  "2026-10-25T19:56:26.918766240Z",
   "requestFeedback":  true,
   "userFacing":  true

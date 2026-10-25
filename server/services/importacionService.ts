@@ -58,7 +58,7 @@ export const PLAN_CUENTAS_EMPRESA_MEMORIA = new Map<string, CuentaCatalogo[]>();
 
 export const importacionService = {
   /**
-   * Neutraliza inyección de fórmulas CSV para prevenir ejecución de macros en Excel
+   * Neutraliza inyección de fórmulas CSV para prevenir ejecución de macros en hojas de cálculo
    */
   neutralizarInyeccionCsv(valor: string): string {
     if (!valor || typeof valor !== 'string') return valor;

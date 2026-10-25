@@ -38,7 +38,7 @@ export const EmptyStateInstructivo: React.FC<EmptyStateInstructivoProps> = ({
   onRegistrarNuevo,
   textoRegistrar = 'Registrar Primera Operación',
   onImportarCsv,
-  textoImportar = 'Importar desde Excel / CSV',
+  textoImportar = 'Importar desde hoja de cálculo / CSV',
   onCargarPlantilla,
   textoPlantilla = 'Cargar desde Plantilla Oficial',
   onVerGuia,
