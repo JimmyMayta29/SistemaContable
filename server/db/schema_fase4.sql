@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS cuentas_financieras (
 CREATE TABLE IF NOT EXISTS movimientos_tesoreria (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     empresa_id UUID NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
-    periodo_id UUID NOT NULL REFERENCES periodos_contables(id),
+    periodo_id UUID NOT NULL REFERENCES periodos(id),
     cuenta_financiera_id UUID NOT NULL REFERENCES cuentas_financieras(id) ON DELETE RESTRICT,
     fecha DATE NOT NULL,
     tipo VARCHAR(30) NOT NULL CHECK (tipo IN ('INGRESO', 'EGRESO', 'TRANSFERENCIA', 'COMISION', 'ITF', 'DEPOSITO_DETRACCION')),
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS movimientos_tesoreria (
 CREATE TABLE IF NOT EXISTS transferencias_cuentas (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     empresa_id UUID NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
-    periodo_id UUID NOT NULL REFERENCES periodos_contables(id),
+    periodo_id UUID NOT NULL REFERENCES periodos(id),
     cuenta_origen_id UUID NOT NULL REFERENCES cuentas_financieras(id) ON DELETE RESTRICT,
     cuenta_destino_id UUID NOT NULL REFERENCES cuentas_financieras(id) ON DELETE RESTRICT,
     fecha DATE NOT NULL,
@@ -131,7 +131,7 @@ CREATE TABLE IF NOT EXISTS conciliaciones_bancarias (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     empresa_id UUID NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
     cuenta_financiera_id UUID NOT NULL REFERENCES cuentas_financieras(id) ON DELETE RESTRICT,
-    periodo_id UUID NOT NULL REFERENCES periodos_contables(id),
+    periodo_id UUID NOT NULL REFERENCES periodos(id),
     fecha_corte DATE NOT NULL,
     saldo_segun_libros NUMERIC(14, 2) NOT NULL,
     saldo_segun_banco NUMERIC(14, 2) NOT NULL,
@@ -149,7 +149,7 @@ CREATE TABLE IF NOT EXISTS conciliaciones_bancarias (
 CREATE TABLE IF NOT EXISTS recibos_honorarios (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     empresa_id UUID NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
-    periodo_id UUID NOT NULL REFERENCES periodos_contables(id),
+    periodo_id UUID NOT NULL REFERENCES periodos(id),
     proveedor_id UUID NOT NULL REFERENCES anexos(id),
     serie VARCHAR(10) NOT NULL,
     numero VARCHAR(20) NOT NULL,
@@ -231,7 +231,7 @@ CREATE TABLE IF NOT EXISTS conceptos_planilla (
 CREATE TABLE IF NOT EXISTS planillas (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     empresa_id UUID NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
-    periodo_id UUID NOT NULL REFERENCES periodos_contables(id),
+    periodo_id UUID NOT NULL REFERENCES periodos(id),
     mes VARCHAR(7) NOT NULL, -- YYYY-MM
     fecha_calculo DATE NOT NULL,
     fecha_pago DATE,
@@ -277,7 +277,7 @@ CREATE TABLE IF NOT EXISTS planilla_lineas (
 CREATE TABLE IF NOT EXISTS provisiones_sociales (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     empresa_id UUID NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
-    periodo_id UUID NOT NULL REFERENCES periodos_contables(id),
+    periodo_id UUID NOT NULL REFERENCES periodos(id),
     trabajador_id UUID NOT NULL REFERENCES trabajadores(id) ON DELETE CASCADE,
     concepto VARCHAR(30) NOT NULL CHECK (concepto IN ('GRATIFICACION', 'BONIFICACION_EXTRAORDINARIA_9PCT', 'CTS', 'VACACIONES')),
     base_calculo NUMERIC(14, 2) NOT NULL,

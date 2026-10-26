@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { migrationController } from '../controllers/migrationController';
-import { requireAuth } from '../middlewares/auth';
+import { requireAuth, requireRol } from '../middlewares/auth';
 
 const router = Router();
 
 router.use(requireAuth);
 
-router.post('/localstorage', migrationController.migrar);
+router.post('/localstorage', requireRol(['ADMINISTRADOR']), migrationController.migrar);
 
 export const migrationRoutes = router;

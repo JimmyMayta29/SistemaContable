@@ -76,7 +76,7 @@ El sistema es una plataforma integral de gestión contable, tributaria y financi
 [Middleware 2: requireEmpresaMembership (server/middlewares/auth.ts)]
          │── Valida asignación activa en tabla usuario_empresa para el empresa_id solicitado
          │── Inyecta req.empresaId verificado y req.rolEnEmpresa
-         │── Si se requiere MFA para ADMIN_ESTUDIO, verifica claim mfaVerificado
+         │── Si se requiere MFA para ADMINISTRADOR, verifica claim mfaVerificado
          ▼
 [Middleware 3: validateBody / validateParams (Zod Schema Validation)]
          │── Valida tipos de datos, formatos RUC, montos no negativos y fechas
@@ -154,8 +154,8 @@ El sistema es una plataforma integral de gestión contable, tributaria y financi
 
 ### Fase 7: Seguridad y Autenticación
 - **JWT con Access (15 min) y Refresh Token (7 días):** `server/services/authJwtService.ts`, `server/routes/authRoutes.ts`. Prueba: `server/tests/run_tests_fase7.ts` (Test 1). Estado: `IMPLEMENTADO Y PROBADO`.
-- **MFA obligatorio (TOTP RFC 6238) para ADMIN_ESTUDIO:** `server/services/totpService.ts`. Endpoint: `/api/auth/login`. Prueba: `run_tests_fase7.ts` (Test 1). Estado: `IMPLEMENTADO Y PROBADO`.
-- **Control de Acceso Basado en Roles por Empresa (RBAC: 4 roles):** `server/middlewares/auth.ts`. Roles: `ADMIN_ESTUDIO`, `CONTADOR`, `ASISTENTE`, `AUDITOR`. Prueba: `run_tests_fase7.ts` (Test 2). Estado: `IMPLEMENTADO Y PROBADO`.
+- **MFA obligatorio (TOTP RFC 6238) para ADMINISTRADOR:** `server/services/totpService.ts`. Endpoint: `/api/auth/login`. Prueba: `run_tests_fase7.ts` (Test 1). Estado: `IMPLEMENTADO Y PROBADO`.
+- **Control de Acceso Basado en Roles por Empresa (RBAC: 4 roles):** `server/middlewares/auth.ts`. Roles: `ADMINISTRADOR`, `CONTADOR`, `ASISTENTE`, `AUDITOR`. Prueba: `run_tests_fase7.ts` (Test 2). Estado: `IMPLEMENTADO Y PROBADO`.
 - **Separación de Funciones:** `server/services/asientoService.ts`. Bloquea que el creador de un borrador lo contabilice o que un asistente cierre el período. Prueba: `run_tests_fase7.ts` (Test 2). Estado: `IMPLEMENTADO Y PROBADO`.
 - **Row Level Security (RLS) forzado en PostgreSQL con SET LOCAL:** `server/config/database.ts`, `server/db/schema_fase7.sql`. Prueba: `run_tests_fase7.ts` (Test 6) y `run_tests_fase8.ts` (Test 1). Estado: `IMPLEMENTADO Y PROBADO`.
 - **Envelope Encryption v2 para Credenciales SOL (DEK + KEK + AAD + AES-256-GCM):** `server/services/cryptoService.ts`. Prueba: `run_tests_fase7.ts` (Test 3). Estado: `IMPLEMENTADO Y PROBADO`.
@@ -273,7 +273,7 @@ Los resultados literales de las pruebas ejecutadas en el entorno se encuentran r
 ## 6. API Y SEGURIDAD
 
 ### 6.1 Matriz de Control de Acceso Basado en Roles (RBAC)
-| Acción en el Sistema | ADMIN_ESTUDIO | CONTADOR_SENIOR | ASISTENTE_CONTABLE | AUDITOR_REVISOR |
+| Acción en el Sistema | ADMINISTRADOR | CONTADOR_SENIOR | ASISTENTE_CONTABLE | AUDITOR_REVISOR |
 | :--- | :---: | :---: | :---: | :---: |
 | Crear y configurar empresas / llaves SOL | ✅ (Requiere MFA) | ❌ | ❌ | ❌ |
 | Asignar usuarios a empresas | ✅ | ❌ | ❌ | ❌ |
@@ -292,7 +292,7 @@ Todos los endpoints exigen autenticación JWT válida (`requireAuth`) y membres�
 - `POST /api/empresas/:id/asientos`: Creación de borrador. Rol mínimo: ASISTENTE. Auditable.
 - `POST /api/asientos/:id/contabilizar`: Contabilización oficial. Rol mínimo: CONTADOR. Exige separación de funciones. Auditable.
 - `POST /api/periodos/:id/cerrar`: Cierre de período. Rol mínimo: CONTADOR. Auditable.
-- `POST /api/periodos/:id/reabrir`: Reapertura excepcional. Rol mínimo: ADMIN_ESTUDIO. Auditable.
+- `POST /api/periodos/:id/reabrir`: Reapertura excepcional. Rol mínimo: ADMINISTRADOR. Auditable.
 - `GET /api/empresas/:id/reportes/hoja-trabajo-10-columnas`: Generación de Hoja de Trabajo 10 Columnas.
 - `GET /api/empresas/:id/reportes/libro-diario-estructurado`: Generación de Libro Diario ESTANDAR.
 - `GET /api/empresas/:id/reportes/ple-5-1-diario`: Descarga directa de archivo plano para SUNAT PLE 5.1.

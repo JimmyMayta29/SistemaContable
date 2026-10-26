@@ -1,9 +1,13 @@
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
+import { z } from 'zod';
 import { db } from '../config/database';
-import { USUARIOS_ESTUDIO_MEMORIA, authJwtService, UsuarioEstudioModel } from './authJwtService';
+import { env } from '../config/env';
+import { REFRESH_TOKENS_MEMORIA, USUARIOS_ESTUDIO_MEMORIA, authJwtService, UsuarioEstudioModel } from './authJwtService';
+import { totpService } from './totpService';
 
 export interface DatosEstudioContable {
+  tenantId: string;
   nombreEstudio: string;
   rucEstudio: string;
   emailContacto: string;
@@ -11,6 +15,19 @@ export interface DatosEstudioContable {
   direccionFiscal?: string;
   fechaRegistro: string;
 }
+
+const setupInicialSchema = z.object({
+  nombreEstudio: z.string().trim().min(3).max(150),
+  rucEstudio: z.string().trim().regex(/^\d{11}$/),
+  emailContacto: z.string().trim().email().max(150),
+  telefonoContacto: z.string().trim().min(6).max(40),
+  direccionFiscal: z.string().trim().max(500).optional(),
+  adminNombre: z.string().trim().min(3).max(150),
+  adminEmail: z.string().trim().toLowerCase().email().max(120),
+  adminPassword: z.string().min(8).refine(p => Buffer.byteLength(p, 'utf8') <= 72, 'La contraseña admite hasta 72 bytes.'),
+  mfaSecret: z.string().trim().regex(/^[A-Z2-7]{16,64}$/),
+  mfaCodigoVerificacion: z.string().trim().regex(/^\d{6}$/)
+});
 
 export interface SetupInicialInput {
   nombreEstudio: string;
@@ -73,17 +90,18 @@ export const setupService = {
   },
 
   /**
-   * Verifica si el sistema ya fue configurado inicialmente con un ADMIN_ESTUDIO
+   * Verifica si el sistema ya fue configurado inicialmente con un ADMINISTRADOR
    */
   async estaConfigurado(): Promise<boolean> {
     if (db.isPostgresConnected()) {
       const res = await db.query(`
-        SELECT COUNT(*) as count FROM usuarios_estudio WHERE rol_global = 'ADMIN_ESTUDIO'
+        SELECT COUNT(*) as count FROM usuarios_estudio WHERE rol_global = 'ADMINISTRADOR'
       `);
       const count = parseInt(res.rows[0]?.count || '0', 10);
       return count > 0;
     }
-    return USUARIOS_ESTUDIO_MEMORIA.some(u => u.rolGlobal === 'ADMIN_ESTUDIO');
+    if (env.NODE_ENV !== 'test' || env.DATABASE_URL) throw new Error('DATABASE_NO_DISPONIBLE');
+    return USUARIOS_ESTUDIO_MEMORIA.some(u => u.rolGlobal === 'ADMINISTRADOR');
   },
 
   /**
@@ -91,6 +109,15 @@ export const setupService = {
    */
   async obtenerEstadoSetup() {
     const configurado = await this.estaConfigurado();
+    if (db.isPostgresConnected()) {
+      const resultado = await db.query(`
+        SELECT tenant_id AS "tenantId", nombre_estudio AS "nombreEstudio", ruc_estudio AS "rucEstudio",
+               email_contacto AS "emailContacto", telefono_contacto AS "telefonoContacto",
+               direccion_fiscal AS "direccionFiscal", fecha_registro AS "fechaRegistro"
+        FROM estudio_configuracion WHERE id = TRUE
+      `);
+      return { configurado, estudio: (resultado.rows[0] as DatosEstudioContable) || null };
+    }
     return {
       configurado,
       estudio: configurado ? ESTUDIO_CONFIGURADO : null
@@ -101,27 +128,14 @@ export const setupService = {
    * Genera un nuevo secreto MFA TOTP (RFC 6238) en Base32 para el asistente de primer arranque
    */
   generarMfaSecret(email: string) {
-    // Generar 20 bytes aleatorios y convertir a Base32
-    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-    const bytes = crypto.randomBytes(20);
-    let secret = '';
-    for (let i = 0; i < bytes.length; i++) {
-      secret += alphabet[bytes[i] % alphabet.length];
-    }
-    const issuer = encodeURIComponent('SUNAConta PRO');
-    const account = encodeURIComponent(email);
-    const otpauthUrl = `otpauth://totp/${issuer}:${account}?secret=${secret}&issuer=${issuer}&algorithm=SHA1&digits=6&period=30`;
-
-    return {
-      secret,
-      otpauthUrl
-    };
+    return totpService.generarSecreto(z.string().trim().email().parse(email), 'SUNAConta PRO');
   },
 
   /**
-   * Inicializa el estudio contable y crea el usuario ADMIN_ESTUDIO principal
+   * Inicializa el estudio contable y crea el usuario ADMINISTRADOR principal
    */
-  async inicializarEstudio(input: SetupInicialInput) {
+  async inicializarEstudio(datos: SetupInicialInput) {
+    const input = setupInicialSchema.parse(datos);
     const yaConfigurado = await this.estaConfigurado();
     if (yaConfigurado) {
       throw new Error('SISTEMA_YA_CONFIGURADO: El estudio ya cuenta con un usuario Administrador configurado.');
@@ -138,7 +152,7 @@ export const setupService = {
       throw new Error(`PASSWORD_INSEGURA: ${checkPass.mensaje}`);
     }
 
-    // 3. Validar MFA obligatorio para ADMIN_ESTUDIO
+    // 3. Validar MFA obligatorio para ADMINISTRADOR
     if (!input.mfaSecret || !input.mfaCodigoVerificacion) {
       throw new Error('MFA_OBLIGATORIO: Se requiere configurar el segundo factor de autenticación TOTP para el rol Administrador.');
     }
@@ -147,7 +161,7 @@ export const setupService = {
       throw new Error('MFA_CODIGO_INVALIDO: El código de 6 dígitos ingresado no coincide con el generador de autenticación.');
     }
 
-    // 4. Crear ADMIN_ESTUDIO
+    // 4. Crear ADMINISTRADOR
     const userId = crypto.randomUUID();
     const passwordHash = await bcrypt.hash(input.adminPassword, 10);
     const fechaActual = new Date().toISOString();
@@ -157,27 +171,15 @@ export const setupService = {
       email: input.adminEmail.toLowerCase().trim(),
       passwordHash,
       nombre: input.adminNombre.trim(),
-      rolGlobal: 'ADMIN_ESTUDIO',
+      rolGlobal: 'ADMINISTRADOR',
       mfaSecret: input.mfaSecret,
       mfaActivado: true,
       isActive: true,
       createdAt: fechaActual
     };
 
-    if (db.isPostgresConnected()) {
-      await db.query(`
-        INSERT INTO usuarios_estudio (
-          id, email, password_hash, nombre, rol_global, mfa_secret, mfa_activado, is_active, created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      `, [
-        nuevoAdmin.id, nuevoAdmin.email, nuevoAdmin.passwordHash, nuevoAdmin.nombre,
-        nuevoAdmin.rolGlobal, nuevoAdmin.mfaSecret, nuevoAdmin.mfaActivado, nuevoAdmin.isActive, nuevoAdmin.createdAt
-      ]);
-    } else {
-      USUARIOS_ESTUDIO_MEMORIA.push(nuevoAdmin);
-    }
-
-    ESTUDIO_CONFIGURADO = {
+    const estudio: DatosEstudioContable = {
+      tenantId: crypto.randomUUID(),
       nombreEstudio: input.nombreEstudio.trim(),
       rucEstudio: input.rucEstudio.trim(),
       emailContacto: input.emailContacto.trim(),
@@ -186,17 +188,49 @@ export const setupService = {
       fechaRegistro: fechaActual
     };
 
-    // 5. Emitir sesión JWT inicial
-    const loginResultado = await authJwtService.login(
-      input.adminEmail,
-      input.adminPassword,
-      input.mfaCodigoVerificacion
-    );
+    if (db.isPostgresConnected()) {
+      const client = await db.getClient();
+      try {
+        await client.query('BEGIN');
+        // Serializa el primer arranque entre procesos y evita dos administradores iniciales.
+        await client.query('SELECT pg_advisory_xact_lock(1398099539)');
+        const existente = await client.query("SELECT id FROM usuarios_estudio WHERE rol_global = 'ADMINISTRADOR' LIMIT 1");
+        if (existente.rows.length) throw new Error('SISTEMA_YA_CONFIGURADO: El estudio ya cuenta con un usuario Administrador configurado.');
+        await client.query('INSERT INTO tenants (id, nombre) VALUES ($1, $2)', [estudio.tenantId, estudio.nombreEstudio]);
+        await client.query(`
+          INSERT INTO usuarios_estudio (id, email, password_hash, nombre, rol_global, mfa_secret, mfa_activado, is_active, created_at)
+          VALUES ($1, $2, $3, $4, $5, $6, TRUE, TRUE, $7)
+        `, [nuevoAdmin.id, nuevoAdmin.email, nuevoAdmin.passwordHash, nuevoAdmin.nombre, nuevoAdmin.rolGlobal, nuevoAdmin.mfaSecret, fechaActual]);
+        await client.query(`
+          INSERT INTO estudio_configuracion (id, tenant_id, nombre_estudio, ruc_estudio, email_contacto, telefono_contacto, direccion_fiscal, fecha_registro)
+          VALUES (TRUE, $1, $2, $3, $4, $5, $6, $7)
+        `, [estudio.tenantId, estudio.nombreEstudio, estudio.rucEstudio, estudio.emailContacto, estudio.telefonoContacto, estudio.direccionFiscal || null, fechaActual]);
+        const sesion = await authJwtService.emitirSesion(nuevoAdmin, true, undefined, client);
+        await client.query('COMMIT');
+        return { estudio, ...sesion };
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      } finally {
+        client.release();
+      }
+    }
 
-    return {
-      mensaje: 'Estudio contable configurado exitosamente.',
-      estudio: ESTUDIO_CONFIGURADO,
-      ...loginResultado
-    };
+    if (env.NODE_ENV !== 'test' || env.DATABASE_URL) throw new Error('DATABASE_NO_DISPONIBLE');
+    if (USUARIOS_ESTUDIO_MEMORIA.some(u => u.rolGlobal === 'ADMINISTRADOR')) throw new Error('SISTEMA_YA_CONFIGURADO: El estudio ya cuenta con un usuario Administrador configurado.');
+    USUARIOS_ESTUDIO_MEMORIA.push(nuevoAdmin);
+    const estudioAnterior = ESTUDIO_CONFIGURADO;
+    try {
+      const sesion = await authJwtService.emitirSesion(nuevoAdmin, true);
+      ESTUDIO_CONFIGURADO = estudio;
+      return { estudio, ...sesion };
+    } catch (err) {
+      USUARIOS_ESTUDIO_MEMORIA.splice(USUARIOS_ESTUDIO_MEMORIA.indexOf(nuevoAdmin), 1);
+      for (let i = REFRESH_TOKENS_MEMORIA.length - 1; i >= 0; i--) {
+        if (REFRESH_TOKENS_MEMORIA[i].usuarioId === nuevoAdmin.id) REFRESH_TOKENS_MEMORIA.splice(i, 1);
+      }
+      ESTUDIO_CONFIGURADO = estudioAnterior;
+      throw err;
+    }
   }
 };

@@ -119,7 +119,7 @@ export const periodoService = {
   },
 
   async reabrir(periodoId: string, motivo: string, userId: string, userRole: string, empresaId: string) {
-    if (userRole !== 'ADMIN_ESTUDIO') {
+    if (userRole !== 'ADMINISTRADOR') {
       throw new Error('PERMISO_DENEGADO: Solo un usuario con rol Administrador puede reabrir un período cerrado.');
     }
     if (!motivo || motivo.trim().length < 10) {
@@ -207,7 +207,7 @@ export const periodoService = {
     return p;
   },
 
-  async reabrirPeriodo(empresaId: string, mesOcodigo: string, role: string = 'ADMIN_ESTUDIO', userId?: string) {
+  async reabrirPeriodo(empresaId: string, mesOcodigo: string, role: string = 'ADMINISTRADOR', userId?: string) {
     let p = PERIODOS_MEMORIA.find(x => x.empresaId === empresaId && x.codigoPeriodo === mesOcodigo);
     if (p) {
       p.estado = 'ABIERTO';

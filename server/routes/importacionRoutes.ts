@@ -18,14 +18,14 @@ importacionRoutes.post(
 importacionRoutes.post(
   '/empresas/:empresaId/confirmar',
   requireAuth,
-  requireEmpresaMembership(['ADMIN_ESTUDIO', 'CONTADOR']),
+  requireEmpresaMembership(['ADMINISTRADOR', 'CONTADOR_SENIOR']),
   importacionController.confirmar
 );
 
 importacionRoutes.post(
   '/empresas/:empresaId/deshacer/:loteId',
   requireAuth,
-  requireEmpresaMembership(['ADMIN_ESTUDIO', 'CONTADOR']),
+  requireEmpresaMembership(['ADMINISTRADOR', 'CONTADOR_SENIOR']),
   importacionController.deshacer
 );
 

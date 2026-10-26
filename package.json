@@ -1,5 +1,5 @@
 {
-  "name": "react-example",
+  "name": "contabilidad-estudio",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -8,7 +8,7 @@
     "start": "tsx server.ts",
     "build": "vite build",
     "preview": "vite preview",
-    "clean": "rm -rf dist server.js",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
     "lint": "tsc --noEmit",
     "test": "tsx server/tests/run_all_tests.ts",
     "test:all": "tsx server/tests/run_all_tests.ts",
@@ -20,7 +20,8 @@
     "test:fase7": "tsx server/tests/run_tests_fase7.ts",
     "test:fase8": "tsx server/tests/run_tests_fase8.ts",
     "test:fase9": "tsx server/tests/run_tests_fase9.ts",
-    "test:coverage": "c8 --reporter=text-summary tsx server/tests/run_all_tests.ts"
+    "test:coverage": "c8 --reporter=text-summary tsx server/tests/run_all_tests.ts",
+    "test:infra": "tsx server/tests/real/test_infra.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
@@ -59,9 +60,11 @@
     "@types/react-dom": "^19.3.0",
     "autoprefixer": "^10.4.21",
     "c8": "^12.0.0",
-    "esbuild": "^0.25.0",
+    "esbuild": "^0.28.2",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.21.0",
     "typescript": "^7.0.2"
-  }
+  },
+  "engines": { "node": ">=22.12.0" },
+  "packageManager": "npm@11.8.0"
 }

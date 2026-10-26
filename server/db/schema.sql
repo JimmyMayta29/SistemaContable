@@ -19,6 +19,20 @@ CREATE TABLE IF NOT EXISTS tenants (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS usuarios_estudio (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    nombre VARCHAR(150) NOT NULL,
+    rol_global VARCHAR(50) NOT NULL CHECK (rol_global IN ('ADMINISTRADOR', 'CONTADOR_SENIOR', 'ASISTENTE_CONTABLE', 'AUDITOR_REVISOR')),
+    mfa_secret VARCHAR(64),
+    mfa_activado BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Conserva identidades anteriores hasta completar su migración, sin crear cuentas nuevas al arrancar.
 CREATE TABLE IF NOT EXISTS usuarios (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
@@ -34,7 +48,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
 
 CREATE TABLE IF NOT EXISTS roles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    codigo VARCHAR(30) NOT NULL UNIQUE, -- 'ADMIN_ESTUDIO', 'CONTADOR', 'ASISTENTE', 'AUDITOR'
+    codigo VARCHAR(30) NOT NULL UNIQUE, -- 'ADMINISTRADOR', 'CONTADOR', 'ASISTENTE', 'AUDITOR'
     nombre VARCHAR(80) NOT NULL,
     descripcion TEXT
 );
@@ -85,7 +99,7 @@ CREATE TABLE IF NOT EXISTS empresas (
 
 CREATE TABLE IF NOT EXISTS membresias (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    usuario_id UUID NOT NULL REFERENCES usuarios_estudio(id) ON DELETE CASCADE,
     empresa_id UUID NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
     rol_id UUID NOT NULL REFERENCES roles(id) ON DELETE RESTRICT,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
@@ -131,7 +145,7 @@ CREATE TABLE IF NOT EXISTS periodos (
     codigo_periodo CHAR(7) NOT NULL, -- '2026-09'
     estado VARCHAR(20) NOT NULL DEFAULT 'ABIERTO' CHECK (estado IN ('ABIERTO', 'CERRADO', 'BLOQUEADO_AUDITORIA')),
     fecha_cierre TIMESTAMPTZ,
-    cerrado_por UUID REFERENCES usuarios(id),
+    cerrado_por UUID REFERENCES usuarios_estudio(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_empresa_periodo UNIQUE (empresa_id, codigo_periodo)
 );
@@ -237,7 +251,7 @@ CREATE TABLE IF NOT EXISTS auditoria (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID REFERENCES tenants(id) ON DELETE SET NULL,
     empresa_id UUID REFERENCES empresas(id) ON DELETE SET NULL,
-    usuario_id UUID REFERENCES usuarios(id) ON DELETE SET NULL,
+    usuario_id UUID REFERENCES usuarios_estudio(id) ON DELETE SET NULL,
     usuario_email VARCHAR(120),
     tabla_afectada VARCHAR(60) NOT NULL,
     registro_id VARCHAR(64) NOT NULL,

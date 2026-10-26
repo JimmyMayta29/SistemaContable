@@ -394,11 +394,11 @@ async function ejecutarSuiteCoberturaFase13() {
     } catch (err: any) {
       falloReaperturaRol = err.message.includes('PERMISO_DENEGADO') || err.message.includes('ROL_NO_AUTORIZADO');
     }
-    testAssert(falloReaperturaRol, 'reabrir deniega reapertura a usuarios sin rol ADMIN_ESTUDIO');
+    testAssert(falloReaperturaRol, 'reabrir deniega reapertura a usuarios sin rol ADMINISTRADOR');
 
-    // 4.6 Reapertura autorizada por ADMIN_ESTUDIO
-    const pReabierto = await periodoService.reabrir(pSep!.id, 'Ajuste de fin de mes por auditoría externa', USER_COB, 'ADMIN_ESTUDIO', EMPRESA_COB);
-    testAssert(pReabierto.estado === 'ABIERTO', 'reabrir reactiva el período exitosamente para ADMIN_ESTUDIO');
+    // 4.6 Reapertura autorizada por ADMINISTRADOR
+    const pReabierto = await periodoService.reabrir(pSep!.id, 'Ajuste de fin de mes por auditoría externa', USER_COB, 'ADMINISTRADOR', EMPRESA_COB);
+    testAssert(pReabierto.estado === 'ABIERTO', 'reabrir reactiva el período exitosamente para ADMINISTRADOR');
   }
 
   // ==========================================================================

@@ -3,7 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { authApi, PerfilSesion, Sesion } from './api/authApi';
+import { guardarSesion, limpiarSesion, obtenerAccessToken } from './api/session';
+import { LoginView } from './components/views/LoginView';
 import { 
   Building2, 
   Database, 
@@ -46,7 +50,7 @@ import { SearchEmpresasModal } from './components/modals/SearchEmpresasModal';
 import { ConfirmarCambioEmpresaModal } from './components/modals/ConfirmarCambioEmpresaModal';
 import { ModalImportacionCsv } from './components/modals/ModalImportacionCsv';
 import { ModalBackupEmpresa } from './components/modals/ModalBackupEmpresa';
-import { useEmpresas, useCrearEmpresa, useMigrarLocalStorage } from './hooks/useEmpresas';
+import { useEmpresas, useCrearEmpresa } from './hooks/useEmpresas';
 import { useToast } from './context/ToastContext';
 import { EmpresaPeriodoProvider, useEmpresaPeriodo } from './context/EmpresaPeriodoContext';
 
@@ -96,7 +100,8 @@ function AppContent({
     cruceNavegacion,
     limpiarCruceNavegacion,
     isSearchModalOpen,
-    setIsSearchModalOpen
+    setIsSearchModalOpen,
+    cambiandoEmpresa
   } = useEmpresaPeriodo();
 
   const { success } = useToast();
@@ -340,6 +345,10 @@ function AppContent({
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  if (cambiandoEmpresa) {
+    return <div role="status" className="h-screen flex items-center justify-center text-slate-600">Conectando con la empresa...</div>;
+  }
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-50 text-slate-800 font-sans">
@@ -664,36 +673,13 @@ function AppContent({
   );
 }
 
-export default function App() {
-  const [setupConfigurado, setSetupConfigurado] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    fetch('/api/setup/status')
-      .then(res => res.json())
-      .then(data => {
-        if (data.data && typeof data.data.configurado === 'boolean') {
-          setSetupConfigurado(data.data.configurado);
-        } else {
-          setSetupConfigurado(true);
-        }
-      })
-      .catch(() => {
-        setSetupConfigurado(true);
-      });
-  }, []);
-
-  const { data: apiEmpresas = [] } = useEmpresas();
+function AppAutenticada({ perfil, estudioNombre, onCerrarSesion }: {
+  perfil: PerfilSesion;
+  estudioNombre: string;
+  onCerrarSesion: () => Promise<void>;
+}) {
+  const { data: empresas = [], isLoading, error, refetch } = useEmpresas();
   const crearEmpresaMutation = useCrearEmpresa();
-  const migrarMutation = useMigrarLocalStorage();
-  const [empresasCustom, setEmpresasCustom] = useState<Record<string, Partial<EmpresaCliente>>>({});
-
-  const empresas = useMemo<EmpresaCliente[]>(() => {
-    const base = (apiEmpresas && apiEmpresas.length > 0) ? apiEmpresas : EMPRESAS_CLIENTES_DEMO;
-    return base.map(e => ({
-      ...e,
-      ...(empresasCustom[e.id] || {})
-    }));
-  }, [apiEmpresas, empresasCustom]);
 
   const handleAddEmpresa = (nueva: EmpresaCliente) => {
     crearEmpresaMutation.mutate({
@@ -709,23 +695,103 @@ export default function App() {
     });
   };
 
-  if (setupConfigurado === false) {
+  if (isLoading) return <div role="status" className="h-screen flex items-center justify-center">Cargando empresas...</div>;
+  if (error) {
     return (
-      <AsistenteSetupInicial
-        onSetupCompletado={() => {
-          setSetupConfigurado(true);
-          window.location.reload();
-        }}
-      />
+      <main className="min-h-screen flex flex-col items-center justify-center gap-4 p-6">
+        <p role="alert" className="text-rose-700">No se pudo cargar la cartera: {error.message}</p>
+        <button onClick={() => refetch()} className="bg-blue-600 text-white rounded-xl px-4 py-2">Reintentar</button>
+        <button onClick={onCerrarSesion} className="text-slate-700 underline">Cerrar sesión</button>
+      </main>
     );
   }
 
   return (
-    <EmpresaPeriodoProvider initialEmpresas={empresas}>
-      <AppContent
-        empresas={empresas}
-        onAddEmpresa={handleAddEmpresa}
-      />
+    <EmpresaPeriodoProvider initialEmpresas={empresas} usuario={{ ...perfil.usuario, estudioNombre }} onCerrarSesion={onCerrarSesion}>
+      <AppContent empresas={empresas} onAddEmpresa={handleAddEmpresa} />
     </EmpresaPeriodoProvider>
   );
+}
+
+export default function App() {
+  const queryClient = useQueryClient();
+  const { warning } = useToast();
+  const [setupConfigurado, setSetupConfigurado] = useState<boolean | null>(null);
+  const [perfil, setPerfil] = useState<PerfilSesion | null>(null);
+  const [estudioNombre, setEstudioNombre] = useState('Estudio contable');
+  const [cargando, setCargando] = useState(true);
+  const [errorInicio, setErrorInicio] = useState('');
+  const [intento, setIntento] = useState(0);
+
+  useEffect(() => {
+    const sesionTerminada = () => {
+      queryClient.clear();
+      setPerfil(null);
+    };
+    window.addEventListener('sunaconta_session_expired', sesionTerminada);
+    return () => window.removeEventListener('sunaconta_session_expired', sesionTerminada);
+  }, [queryClient]);
+
+  useEffect(() => {
+    let activo = true;
+    setCargando(true);
+    setErrorInicio('');
+    const inicializar = async () => {
+      try {
+        const estado = await authApi.estadoSetup();
+        if (!activo) return;
+        setSetupConfigurado(estado.configurado);
+        setEstudioNombre(estado.estudio?.nombreEstudio || 'Estudio contable');
+        if (estado.configurado && obtenerAccessToken()) {
+          try {
+            const actual = await authApi.perfil();
+            if (activo) setPerfil(actual);
+          } catch (err) {
+            if (obtenerAccessToken()) throw err;
+          }
+        }
+      } catch (err: any) {
+        if (activo) setErrorInicio(err.message || 'No se pudo consultar la configuración.');
+      } finally {
+        if (activo) setCargando(false);
+      }
+    };
+    void inicializar();
+    return () => { activo = false; };
+  }, [intento]);
+
+  const iniciarSesion = async (sesion: Sesion) => {
+    setSetupConfigurado(true);
+    guardarSesion(sesion);
+    const actual = await authApi.perfil();
+    queryClient.clear();
+    setPerfil(actual);
+    if (sesion.estudio?.nombreEstudio) setEstudioNombre(sesion.estudio.nombreEstudio);
+  };
+
+  const cerrarSesion = useCallback(async () => {
+    try {
+      await authApi.logout();
+    } catch {
+      warning('Se cerró la sesión local. No se pudo confirmar la revocación en el servidor.');
+    } finally {
+      limpiarSesion();
+      queryClient.clear();
+      setPerfil(null);
+      window.history.replaceState({}, '', '/');
+    }
+  }, [queryClient, warning]);
+
+  if (cargando) return <div role="status" className="h-screen flex items-center justify-center">Verificando acceso...</div>;
+  if (errorInicio) {
+    return (
+      <main className="min-h-screen flex flex-col items-center justify-center gap-4 p-6">
+        <p role="alert" className="text-rose-700">{errorInicio}</p>
+        <button onClick={() => setIntento(n => n + 1)} className="bg-blue-600 text-white rounded-xl px-4 py-2">Reintentar conexión</button>
+      </main>
+    );
+  }
+  if (setupConfigurado === false) return <AsistenteSetupInicial onSetupCompletado={iniciarSesion} />;
+  if (!perfil) return <LoginView onAutenticado={iniciarSesion} />;
+  return <AppAutenticada perfil={perfil} estudioNombre={estudioNombre} onCerrarSesion={cerrarSesion} />;
 }

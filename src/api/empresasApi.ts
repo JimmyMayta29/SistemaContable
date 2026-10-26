@@ -22,7 +22,7 @@ export const empresasApi = {
   },
 
   async crear(empresa: Partial<EmpresaCliente>): Promise<EmpresaCliente> {
-    const res: any = await apiClient.post('/empresas', empresa);
+    const res: any = await apiClient.post('/empresas', { ...empresa, domicilioFiscal: empresa.direccionFiscal });
     return res.data;
   },
 

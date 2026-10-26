@@ -132,7 +132,7 @@ export const asientoController = {
       const empresaId = req.empresaId!;
       const userId = req.user?.id || '00000000-0000-0000-0000-000000000001';
 
-      const contabilizado = await asientoService.contabilizar(id, empresaId, userId);
+      const contabilizado = await asientoService.contabilizar(id, empresaId, userId, { enforceSegregacion: true });
       return successResponse(res, contabilizado, `Asiento contabilizado con éxito con N° ${contabilizado.numero}`);
     } catch (err: any) {
       return errorResponse(res, err.message);
@@ -212,7 +212,7 @@ export const asientoController = {
       const { id } = req.params;
       const empresaId = req.empresaId!;
       const userId = req.user?.id || '00000000-0000-0000-0000-000000000001';
-      const userRole = req.userRolEnEmpresa || req.user?.rolGlobal || 'ADMIN_ESTUDIO';
+      const userRole = req.userRolEnEmpresa || req.user?.rolGlobal || 'ADMINISTRADOR';
       const { motivo } = req.body;
 
       const reabierto = await periodoService.reabrir(id, motivo, userId, userRole, empresaId);

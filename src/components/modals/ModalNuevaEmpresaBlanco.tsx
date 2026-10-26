@@ -12,6 +12,7 @@ import {
   Sparkles 
 } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
+import { apiClient } from '../../api/client';
 
 interface ModalNuevaEmpresaBlancoProps {
   isOpen: boolean;
@@ -80,14 +81,7 @@ export const ModalNuevaEmpresaBlanco: React.FC<ModalNuevaEmpresaBlancoProps> = (
 
     setGuardando(true);
     try {
-      const token = localStorage.getItem('sunaconta_jwt_token');
-      const res = await fetch('/api/empresas', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({
+      const data: any = await apiClient.post('/empresas', {
           codigoEmpresa: codigoEmpresa.trim() || ruc.slice(-6),
           ruc: ruc.trim(),
           razonSocial: razonSocial.trim(),
@@ -105,11 +99,8 @@ export const ModalNuevaEmpresaBlanco: React.FC<ModalNuevaEmpresaBlancoProps> = (
           contadorColegiatura: contadorColegiatura.trim() || undefined,
           ejercicio,
           monedaPrincipal
-        })
       });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
+      if (!data.success) {
         throw new Error(data.error || 'Error creando empresa');
       }
 

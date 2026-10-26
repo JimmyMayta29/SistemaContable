@@ -343,7 +343,7 @@ export const tesoreriaPlanillaController = {
     try {
       const empresaId = req.params.id;
       const userRole = (req as any).user?.role || 'CONTADOR';
-      const tienePermiso = userRole === 'ADMIN_ESTUDIO' || userRole === 'RRHH';
+      const tienePermiso = userRole === 'ADMINISTRADOR' || userRole === 'RRHH';
       const list = await planillaService.listarTrabajadores(empresaId, tienePermiso);
       return successResponse(res, list);
     } catch (err: any) {

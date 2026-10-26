@@ -381,7 +381,7 @@ async function ejecutarSuiteFase4() {
     assert(bloqueaHonorarios, 'Período cerrado bloquea recibos por honorarios');
 
     // Reabrir para permitir pruebas de aislamiento
-    await periodoService.reabrirPeriodo(EMPRESA_A, '2026-09', 'ADMIN_ESTUDIO', USER_ID);
+    await periodoService.reabrirPeriodo(EMPRESA_A, '2026-09', 'ADMINISTRADOR', USER_ID);
   }
 
   // --------------------------------------------------------------------------

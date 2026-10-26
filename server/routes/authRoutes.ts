@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { authJwtService } from '../services/authJwtService';
 import { auditoriaChainService } from '../services/auditoriaChainService';
 import { cryptoService } from '../services/cryptoService';
-import { requireAuth, requireMfa } from '../middlewares/auth';
+import { requireAuth, requireEmpresaMembership, requireMfa, requireRol } from '../middlewares/auth';
 import { successResponse, errorResponse } from '../utils/response';
 import { sireService, CONEXIONES_SUNAT_MEMORIA } from '../services/sireService';
 
@@ -10,7 +10,7 @@ const router = Router();
 
 /**
  * POST /api/auth/login
- * Autenticación de usuario con contraseña, TOTP para ADMIN_ESTUDIO y emisión de JWT
+ * Autenticación de usuario con contraseña, TOTP para ADMINISTRADOR y emisión de JWT
  */
 router.post('/login', async (req: Request, res: Response) => {
   try {
@@ -34,7 +34,7 @@ router.post('/login', async (req: Request, res: Response) => {
 router.post('/refresh', async (req: Request, res: Response) => {
   try {
     const { refreshToken } = req.body;
-    if (!refreshToken) {
+    if (typeof refreshToken !== 'string' || !refreshToken) {
       return errorResponse(res, 'El refresh token es obligatorio.', 400);
     }
 
@@ -45,6 +45,16 @@ router.post('/refresh', async (req: Request, res: Response) => {
   }
 });
 
+router.post('/logout', requireAuth, async (req: Request, res: Response) => {
+  try {
+    if (typeof req.body.refreshToken !== 'string') return errorResponse(res, 'El refresh token es obligatorio.', 400);
+    await authJwtService.revocarRefreshToken(req.body.refreshToken, req.user!.id);
+    return successResponse(res, { sesionRevocada: true });
+  } catch {
+    return errorResponse(res, 'No se pudo revocar la sesión indicada.', 400);
+  }
+});
+
 /**
  * POST /api/auth/seleccionar-empresa
  * Cambia la empresa activa en el servidor y emite nuevo Access Token
@@ -52,11 +62,11 @@ router.post('/refresh', async (req: Request, res: Response) => {
 router.post('/seleccionar-empresa', requireAuth, async (req: Request, res: Response) => {
   try {
     const { empresaId } = req.body;
-    if (!empresaId) {
+    if (typeof empresaId !== 'string' || !empresaId) {
       return errorResponse(res, 'Debe especificar el identificador de la empresa.', 400);
     }
 
-    const resultado = await authJwtService.cambiarEmpresaActiva(req.user!.id, empresaId);
+    const resultado = await authJwtService.cambiarEmpresaActiva(req.user!.id, empresaId, req.user!.mfaVerificado === true);
     return successResponse(res, resultado, `Empresa activa actualizada a '${empresaId}'.`);
   } catch (err: any) {
     return errorResponse(res, err.message, 403);
@@ -68,18 +78,27 @@ router.post('/seleccionar-empresa', requireAuth, async (req: Request, res: Respo
  * Retorna los datos del usuario y sus permisos asignados
  */
 router.get('/perfil', requireAuth, async (req: Request, res: Response) => {
-  return successResponse(res, {
-    usuario: req.user,
-    empresaActivaId: req.empresaId,
-    rolEnEmpresa: req.userRolEnEmpresa
-  });
+  try {
+    const usuario = await authJwtService.obtenerUsuarioPorId(req.user!.id);
+    if (!usuario) return errorResponse(res, 'SESION_INVALIDA', 401);
+    const membresias = await authJwtService.obtenerMembresias(usuario.id);
+    const membresia = membresias.find(m => m.empresaId === req.empresaId);
+    return successResponse(res, {
+      usuario: { id: usuario.id, email: usuario.email, nombre: usuario.nombre, rolGlobal: usuario.rolGlobal },
+      empresaActivaId: membresia?.empresaId || '',
+      rolEnEmpresa: membresia?.rolEnEmpresa || usuario.rolGlobal,
+      empresasPermitidas: membresias.map(m => m.empresaId)
+    });
+  } catch {
+    return errorResponse(res, 'No se pudo consultar el perfil actual.', 503);
+  }
 });
 
 /**
  * GET /api/auditoria/verificar-integridad
  * Valida la integridad criptográfica de la cadena de auditoría (Fase 7.5)
  */
-router.get('/auditoria/verificar-integridad', requireAuth, async (req: Request, res: Response) => {
+router.get('/auditoria/verificar-integridad', requireAuth, requireEmpresaMembership(), async (req: Request, res: Response) => {
   try {
     const empresaId = req.empresaId!;
     const resultado = await auditoriaChainService.verificarIntegridad(empresaId);
@@ -93,7 +112,7 @@ router.get('/auditoria/verificar-integridad', requireAuth, async (req: Request, 
  * POST /api/sunat/recifrar-v2
  * Job de migración para recifrar credenciales de v1 a v2 con Envelope Encryption y AAD (Fase 7.4)
  */
-router.post('/sunat/recifrar-v2', requireAuth, requireMfa(), async (req: Request, res: Response) => {
+router.post('/sunat/recifrar-v2', requireAuth, requireEmpresaMembership(['ADMINISTRADOR']), requireRol(['ADMINISTRADOR']), requireMfa(), async (req: Request, res: Response) => {
   try {
     const empresaId = req.empresaId!;
     const conexion = CONEXIONES_SUNAT_MEMORIA[empresaId];

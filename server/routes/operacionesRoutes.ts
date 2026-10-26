@@ -18,13 +18,14 @@ import { validateBody } from '../middlewares/validate';
 const router = Router();
 
 router.use(requireAuth);
+router.use(['/compras/:id', '/ventas/:id', '/comprobantes/:id', '/notas/:id', '/detracciones/:id'], requireEmpresaMembership());
 
 // --------------------------------------------------------------------------
 // COMPRAS (RCE)
 // --------------------------------------------------------------------------
 router.get('/empresas/:id/compras', requireEmpresaMembership(), operacionesController.listarCompras);
-router.post('/empresas/:id/compras', requireEmpresaMembership(['ADMIN_ESTUDIO', 'CONTADOR', 'ASISTENTE']), validateBody(compraSchema), operacionesController.crearCompra);
-router.post('/empresas/:id/compras/importar-lote', requireEmpresaMembership(['ADMIN_ESTUDIO', 'CONTADOR']), validateBody(importarLoteSchema), operacionesController.importarLoteCompras);
+router.post('/empresas/:id/compras', requireEmpresaMembership(['ADMINISTRADOR', 'CONTADOR_SENIOR', 'ASISTENTE_CONTABLE']), validateBody(compraSchema), operacionesController.crearCompra);
+router.post('/empresas/:id/compras/importar-lote', requireEmpresaMembership(['ADMINISTRADOR', 'CONTADOR_SENIOR']), validateBody(importarLoteSchema), operacionesController.importarLoteCompras);
 router.get('/empresas/:id/registro-compras', requireEmpresaMembership(), operacionesController.obtenerRegistroCompras);
 
 router.get('/compras/:id', operacionesController.obtenerCompra);
@@ -38,8 +39,8 @@ router.post('/compras/:id/duplicar', operacionesController.duplicarCompra);
 // VENTAS (RVIE)
 // --------------------------------------------------------------------------
 router.get('/empresas/:id/ventas', requireEmpresaMembership(), operacionesController.listarVentas);
-router.post('/empresas/:id/ventas', requireEmpresaMembership(['ADMIN_ESTUDIO', 'CONTADOR', 'ASISTENTE']), validateBody(ventaSchema), operacionesController.crearVenta);
-router.post('/empresas/:id/ventas/importar-lote', requireEmpresaMembership(['ADMIN_ESTUDIO', 'CONTADOR']), validateBody(importarLoteSchema), operacionesController.importarLoteVentas);
+router.post('/empresas/:id/ventas', requireEmpresaMembership(['ADMINISTRADOR', 'CONTADOR_SENIOR', 'ASISTENTE_CONTABLE']), validateBody(ventaSchema), operacionesController.crearVenta);
+router.post('/empresas/:id/ventas/importar-lote', requireEmpresaMembership(['ADMINISTRADOR', 'CONTADOR_SENIOR']), validateBody(importarLoteSchema), operacionesController.importarLoteVentas);
 router.get('/empresas/:id/registro-ventas', requireEmpresaMembership(), operacionesController.obtenerRegistroVentas);
 
 router.get('/ventas/:id', operacionesController.obtenerVenta);
@@ -70,14 +71,14 @@ router.get('/empresas/:id/antiguedad-de-saldos', requireEmpresaMembership(), ope
 router.get('/empresas/:id/antiguedad-saldos', requireEmpresaMembership(), operacionesController.reporteAntiguedad); // Alias
 router.get('/empresas/:id/estado-de-cuenta/:anexoId', requireEmpresaMembership(), operacionesController.obtenerEstadoCuenta);
 
-router.post('/empresas/:id/aplicaciones-pago', requireEmpresaMembership(['ADMIN_ESTUDIO', 'CONTADOR', 'ASISTENTE']), validateBody(aplicacionPagoSchema), operacionesController.aplicarPago);
-router.post('/empresas/:id/aplicaciones-cobranza', requireEmpresaMembership(['ADMIN_ESTUDIO', 'CONTADOR', 'ASISTENTE']), validateBody(aplicacionCobranzaSchema), operacionesController.aplicarCobranza);
+router.post('/empresas/:id/aplicaciones-pago', requireEmpresaMembership(['ADMINISTRADOR', 'CONTADOR_SENIOR', 'ASISTENTE_CONTABLE']), validateBody(aplicacionPagoSchema), operacionesController.aplicarPago);
+router.post('/empresas/:id/aplicaciones-cobranza', requireEmpresaMembership(['ADMINISTRADOR', 'CONTADOR_SENIOR', 'ASISTENTE_CONTABLE']), validateBody(aplicacionCobranzaSchema), operacionesController.aplicarCobranza);
 
 // --------------------------------------------------------------------------
 // ANEXOS (ALTA RÁPIDA & BÚSQUEDA)
 // --------------------------------------------------------------------------
 router.get('/empresas/:id/anexos', requireEmpresaMembership(), operacionesController.listarAnexos);
-router.post('/empresas/:id/anexos', requireEmpresaMembership(['ADMIN_ESTUDIO', 'CONTADOR', 'ASISTENTE']), validateBody(anexoSchema), operacionesController.crearAnexo);
+router.post('/empresas/:id/anexos', requireEmpresaMembership(['ADMINISTRADOR', 'CONTADOR_SENIOR', 'ASISTENTE_CONTABLE']), validateBody(anexoSchema), operacionesController.crearAnexo);
 
 // --------------------------------------------------------------------------
 // DETRACCIONES SPOT

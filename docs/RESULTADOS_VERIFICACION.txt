@@ -35,7 +35,7 @@ SALIDA LITERAL DEL COMANDO:
 🔹 Test 3: Inmutabilidad (No se admite UPDATE ni DELETE en contabilizados)
   ✅ PASÓ: Bloqueo de modificación física sobre asiento contabilizado
 🔹 Test 4: Integridad de Período Cerrado
-  ✅ PASÓ: Reapertura denegada a roles no autorizados (requiere ADMIN_ESTUDIO)
+  ✅ PASÓ: Reapertura denegada a roles no autorizados (requiere ADMINISTRADOR)
 🔹 Test 5: Anulación con Asiento de Extorno Vinculado
   ✅ PASÓ: Asiento original marcado como ANULADO
   ✅ PASÓ: Asiento de extorno generado y vinculado

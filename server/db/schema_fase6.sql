@@ -107,7 +107,7 @@ CREATE TABLE IF NOT EXISTS sire_conciliacion_lineas (
         decision IN ('PENDIENTE', 'ACEPTADA', 'OBSERVADA', 'IGNORADA')
     ),
     motivo_decision TEXT,
-    usuario_decision_id UUID REFERENCES usuarios(id),
+    usuario_decision_id UUID REFERENCES usuarios_estudio(id),
     fecha_decision TIMESTAMPTZ,
     diferencia_base NUMERIC(14,2) NOT NULL DEFAULT 0.00,
     diferencia_igv NUMERIC(14,2) NOT NULL DEFAULT 0.00,
@@ -170,7 +170,7 @@ CREATE TABLE IF NOT EXISTS ple_exportaciones (
     es_oficial BOOLEAN NOT NULL DEFAULT FALSE,
     validaciones_superadas BOOLEAN NOT NULL DEFAULT TRUE,
     detalle_validaciones JSONB,
-    usuario_id UUID REFERENCES usuarios(id),
+    usuario_id UUID REFERENCES usuarios_estudio(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

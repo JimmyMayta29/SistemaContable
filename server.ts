@@ -5,12 +5,12 @@ import { createServer as createViteServer } from 'vite';
 import { apiRoutes } from './server/routes';
 import { runMigrations } from './server/db/migrate';
 import { env } from './server/config/env';
+import { initializeDatabase, closeDatabase } from './server/config/database';
+import { fileURLToPath } from 'node:url';
 
 async function startServer() {
-  if (env.NODE_ENV === 'production' && !env.DATABASE_URL) {
-    console.error('❌ [Server] FATAL: NODE_ENV=production requiere DATABASE_URL configurada. El servidor no arrancará con motor en memoria.');
-    process.exit(1);
-  }
+  await initializeDatabase();
+  await runMigrations();
 
   const app = express();
 
@@ -21,9 +21,6 @@ async function startServer() {
   // Rutas de API Backend
   app.use('/api', apiRoutes);
 
-  // Ejecutar migraciones si la BD está disponible
-  await runMigrations();
-
   // Integración con Vite en desarrollo vs distribución estática en producción
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
@@ -32,7 +29,7 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.resolve(__dirname, 'dist');
+    const distPath = fileURLToPath(new URL('./dist', import.meta.url));
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
@@ -46,5 +43,7 @@ async function startServer() {
 }
 
 startServer().catch((err) => {
-  console.error('❌ [Server] Error crítico iniciando el servidor:', err);
+  console.error('❌ [Server] Error crítico iniciando el servidor:', err.message);
+  process.exitCode = 1;
+  void closeDatabase();
 });

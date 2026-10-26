@@ -98,7 +98,7 @@ async function ejecutarSuiteFase7B() {
 
     testAssert(statusCode === 403, 'empresaGuard retorna HTTP 403 Forbidden al forzar Empresa B');
     testAssert(!nextCalled, 'Middleware detiene la ejecución del endpoint no autorizado');
-    testAssert(errorMsg.includes('Acceso denegado'), 'Mensaje de error indica denegación por falta de permisos');
+    testAssert(errorMsg.includes('PERMISO_INSUFICIENTE'), 'Mensaje de error indica denegación por falta de permisos');
 
     // 1.3 El servidor resuelve la empresa desde el token y usuario_empresa, nunca confía en empresaId arbitrario
     const reqArbitrario: any = {
@@ -138,7 +138,7 @@ async function ejecutarSuiteFase7B() {
     };
     await requireAuth(reqNoToken, resNoToken, () => {});
     testAssert(codeNoToken === 401, 'Petición sin token de autenticación es rechazada con HTTP 401');
-    testAssert(msgNoToken.includes('Token de autenticación requerido'), 'Mensaje 401 explícito por falta de token');
+    testAssert(msgNoToken.includes('AUTENTICACION_REQUERIDA'), 'Mensaje 401 explícito por falta de token');
 
     // 1.5 Header x-empresa-id de otra empresa NO cambia el contexto
     const reqSpoof: any = {
@@ -171,7 +171,7 @@ async function ejecutarSuiteFase7B() {
     const membershipCheck = requireEmpresaMembership();
     await membershipCheck(reqNoMembership, resNoMem, () => {});
     testAssert(codeNoMem === 403, 'requireEmpresaMembership devuelve HTTP 403 al no tener membresía en la empresa');
-    testAssert(msgNoMem.includes('Acceso denegado'), 'Mensaje 403 explícito por denegación de membresía');
+    testAssert(msgNoMem.includes('PERMISO_INSUFICIENTE'), 'Mensaje 403 explícito por denegación de membresía');
   }
 
   // --------------------------------------------------------------------------
@@ -266,7 +266,7 @@ async function ejecutarSuiteFase7B() {
       status(code: number) { statusMutacion = code; return this; },
       json(data: any) { return this; }
     };
-    const checkMembership = requireEmpresaMembership(['ADMIN_ESTUDIO', 'CONTADOR', 'ASISTENTE']);
+    const checkMembership = requireEmpresaMembership(['ADMINISTRADOR', 'CONTADOR', 'ASISTENTE']);
     await checkMembership(reqMutacionAuditor, resMutacion, () => {});
     testAssert(statusMutacion === 403, 'Servidor rechaza con 403 peticiones de mutación para rol AUDITOR');
   }
@@ -289,7 +289,7 @@ async function ejecutarSuiteFase7B() {
         subdiario: '01',
         totalDebe: 100
       },
-      user: { id: 'usr-admin-01', rolGlobal: 'ADMIN_ESTUDIO' }
+      user: { id: 'usr-admin-01', rolGlobal: 'ADMINISTRADOR' }
     };
     let statusPeriodoCerrado = 200;
     let msgPeriodoCerrado = '';

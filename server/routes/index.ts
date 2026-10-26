@@ -13,18 +13,19 @@ import { authRoutes } from './authRoutes';
 import { setupRoutes } from './setupRoutes';
 import { importacionRoutes } from './importacionRoutes';
 import { backupEmpresaRoutes } from './backupEmpresaRoutes';
-import { requireAuth } from '../middlewares/auth';
+import { requireAuth, requireEmpresaMembership } from '../middlewares/auth';
 import { empresaGuard } from '../middlewares/empresaGuard';
 import { db } from '../config/database';
 
 const router = Router();
 
 router.get('/health', (req, res) => {
-  res.json({
-    status: 'UP',
-    database: db.isPostgresConnected() ? 'POSTGRESQL_CONNECTED' : 'IN_MEMORY_FALLBACK',
+  const disponible = db.isPostgresConnected();
+  res.status(disponible ? 200 : 503).json({
+    status: disponible ? 'UP' : 'DOWN',
+    database: disponible ? 'POSTGRESQL_CONNECTED' : 'UNAVAILABLE',
     environment: process.env.NODE_ENV || 'development',
-    version: '1.7.0-fase7',
+    version: process.env.npm_package_version || '0.0.0',
     timestamp: new Date().toISOString()
   });
 });
@@ -41,6 +42,8 @@ router.get('/e/:empresaId/verificar-acceso', requireAuth, empresaGuard(), (req, 
 
 router.use('/auth', authRoutes);
 router.use('/setup', setupRoutes);
+router.use(requireAuth);
+router.use('/empresas/:empresaId', requireEmpresaMembership());
 router.use('/importacion', importacionRoutes);
 router.use('/', backupEmpresaRoutes);
 router.use('/empresas', empresaRoutes);

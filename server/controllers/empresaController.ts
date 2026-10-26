@@ -40,7 +40,8 @@ export const credencialesSunatSchema = z.object({
 export const empresaController = {
   async listar(req: Request, res: Response) {
     try {
-      const userId = req.user?.id || '00000000-0000-0000-0000-000000000001';
+      if (!req.user) return errorResponse(res, 'AUTENTICACION_REQUERIDA', 401);
+      const userId = req.user.id;
       const empresas = await empresaRepository.listarPorUsuario(userId);
 
       // Enriquecer cada empresa con cronograma de vencimientos oficial desde parametros_tributarios
@@ -89,8 +90,12 @@ export const empresaController = {
 
   async crear(req: Request, res: Response) {
     try {
-      const userId = req.user?.id || '00000000-0000-0000-0000-000000000001';
-      const tenantId = req.user?.tenantId || '00000000-0000-0000-0000-000000000001';
+      if (!req.user) return errorResponse(res, 'AUTENTICACION_REQUERIDA', 401);
+      if (req.user.rolGlobal !== 'ADMINISTRADOR') return errorResponse(res, 'PERMISO_INSUFICIENTE', 403);
+      const userId = req.user.id;
+      const { estudio } = await setupService.obtenerEstadoSetup();
+      if (!estudio?.tenantId) return errorResponse(res, 'ESTUDIO_NO_CONFIGURADO', 409);
+      const tenantId = estudio.tenantId;
 
       const nueva = await empresaRepository.crear({
         tenantId,
@@ -164,8 +169,8 @@ export const empresaController = {
 
   async restablecerDemo(req: Request, res: Response) {
     try {
-      if (req.user?.rolGlobal !== 'ADMIN_ESTUDIO') {
-        return errorResponse(res, 'Solo el rol ADMIN_ESTUDIO tiene autorización para restablecer la Empresa Demo.', 403);
+      if (req.user?.rolGlobal !== 'ADMINISTRADOR') {
+        return errorResponse(res, 'Solo el rol ADMINISTRADOR tiene autorización para restablecer la Empresa Demo.', 403);
       }
       const resultado = await empresaDemoService.restablecerDemo(req.user.id);
       return successResponse(res, resultado, 'Empresa Demo S.A.C. restablecida con éxito.');

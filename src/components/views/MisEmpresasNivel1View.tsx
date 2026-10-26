@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '../../api/client';
 import { 
   Building2, 
   Search, 
@@ -42,6 +44,7 @@ export const MisEmpresasNivel1View: React.FC<MisEmpresasNivel1ViewProps> = ({
 }) => {
   const { entrarAEmpresa, usuario, setIsSearchModalOpen } = useEmpresaPeriodo();
   const { success, error: toastError } = useToast();
+  const queryClient = useQueryClient();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filtroEstado, setFiltroEstado] = useState<'TODOS' | 'POR_VENCER' | 'PRELIQUIDADO' | 'AL_DIA'>('TODOS');
@@ -64,16 +67,8 @@ export const MisEmpresasNivel1View: React.FC<MisEmpresasNivel1ViewProps> = ({
   const handleRestablecerDemo = async () => {
     setRestableciendoDemo(true);
     try {
-      const token = localStorage.getItem('sunaconta_jwt_token');
-      const res = await fetch('/api/empresas/demo/restablecer', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        }
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
+      const data: any = await apiClient.post('/empresas/demo/restablecer');
+      if (!data.success) {
         throw new Error(data.error || 'Error restableciendo empresa demo');
       }
       success('Empresa Demo S.A.C. restablecida con balance cuadrado y 100% de operaciones.');
@@ -605,8 +600,8 @@ Mendoza & Asociados — Asesores Tributarios S.C.R.L.`}
       <ModalNuevaEmpresaBlanco
         isOpen={isModalBlancoOpen}
         onClose={() => setIsModalBlancoOpen(false)}
-        onEmpresaCreada={(nueva) => {
-          onAddEmpresa(nueva);
+        onEmpresaCreada={() => {
+          void queryClient.invalidateQueries({ queryKey: ['empresas'] });
         }}
       />
 

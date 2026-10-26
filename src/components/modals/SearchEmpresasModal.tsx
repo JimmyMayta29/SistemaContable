@@ -52,9 +52,8 @@ export const SearchEmpresasModal: React.FC<SearchEmpresasModalProps> = ({
     .map(id => empresas.find(e => e.id === id))
     .filter((e): e is EmpresaCliente => Boolean(e));
 
-  const handleSelect = (empresa: EmpresaCliente) => {
-    entrarAEmpresa(empresa);
-    onClose();
+  const handleSelect = async (empresa: EmpresaCliente) => {
+    if (await entrarAEmpresa(empresa)) onClose();
   };
 
   return (

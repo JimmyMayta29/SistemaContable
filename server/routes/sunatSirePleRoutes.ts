@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { sunatSirePleController } from '../controllers/sunatSirePleController';
+import { requireEmpresaMembership } from '../middlewares/auth';
 
 const router = Router();
 
@@ -10,7 +11,7 @@ router.post('/empresas/:id/sunat/conexion/validar', sunatSirePleController.valid
 
 // Descarga de propuestas SIRE y seguimiento de cola asíncrona
 router.post('/empresas/:id/sire/descargar', sunatSirePleController.descargarPropuesta);
-router.get('/sunat-jobs/:id', sunatSirePleController.consultarJob);
+router.get('/sunat-jobs/:id', requireEmpresaMembership(), sunatSirePleController.consultarJob);
 
 // Conciliador SIRE (Cruce vs registros ERP)
 router.get('/empresas/:id/sire/conciliacion', sunatSirePleController.obtenerConciliacion);
@@ -33,6 +34,6 @@ router.get('/empresas/:id/comprobantes-xml', sunatSirePleController.listarCompro
 // Libros Electrónicos PLE 5.2
 router.get('/empresas/:id/ple/libros', sunatSirePleController.listarLibrosPle);
 router.post('/empresas/:id/ple/exportar', sunatSirePleController.exportarPle);
-router.get('/ple-exportaciones/:id', sunatSirePleController.obtenerExportacionPle);
+router.get('/ple-exportaciones/:id', requireEmpresaMembership(), sunatSirePleController.obtenerExportacionPle);
 
 export const sunatSirePleRoutes = router;

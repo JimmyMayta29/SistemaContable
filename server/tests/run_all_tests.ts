@@ -1,6 +1,13 @@
 import { execSync } from 'child_process';
 
+// Las suites de fixtures nunca deben conectarse a una base configurada por el usuario.
+process.env.NODE_ENV = 'test';
+delete process.env.DATABASE_URL;
+
 const suites = [
+  { name: 'Sesión del cliente y renovación concurrente', path: 'src/api/session.test.ts' },
+  { name: 'Autorización HTTP por empresa y rol', path: 'server/tests/run_tests_acceso.ts' },
+  { name: 'Configuración inicial y sesión administrativa', path: 'server/tests/verificar_auth_setup.ts' },
   { name: 'Fases 1 y 2: Motor Contable & Partida Doble', path: 'server/tests/run_tests.ts' },
   { name: 'Fase 3: Compras, Ventas, CXC/CXP & Tributos', path: 'server/tests/run_tests_fase3.ts' },
   { name: 'Fase 4: Tesorería, Conciliación Bancaria, 4ta & Planilla', path: 'server/tests/run_tests_fase4.ts' },

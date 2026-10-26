@@ -1,9 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import { env } from '../config/env';
 import { errorResponse } from '../utils/response';
-import { db } from '../config/database';
-import { authJwtService, RolEstudio, AccessTokenClaims, USUARIOS_EMPRESA_MEMORIA } from '../services/authJwtService';
+import { authJwtService, RolEstudio } from '../services/authJwtService';
 import { totpService } from '../services/totpService';
 
 export interface AuthUser {
@@ -28,144 +25,73 @@ declare global {
   }
 }
 
-/**
- * Middleware para requerir autenticación JWT firmada (Fase 7 y Fase 13)
- * Extrae userId, rol y empresaId resueltos exclusivamente por el servidor.
- * Retorna 401 si no hay token o es inválido. Nunca lee x-empresa-id ni aplica fallbacks arbitrarios.
- */
+export const ROLES_ESCRITURA: RolEstudio[] = ['ADMINISTRADOR', 'CONTADOR_SENIOR', 'ASISTENTE_CONTABLE'];
+export const ROLES_LECTURA: RolEstudio[] = [...ROLES_ESCRITURA, 'AUDITOR_REVISOR'];
+
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return errorResponse(res, 'Acceso denegado: Token de autenticación requerido', 401);
-  }
-
-  const token = authHeader.split(' ')[1];
+  if (req.user) return next();
+  const header = req.headers.authorization;
+  if (!header?.startsWith('Bearer ')) return errorResponse(res, 'AUTENTICACION_REQUERIDA', 401);
   try {
-    // 1. Validar mediante el servicio JWT firmado
-    const claims = authJwtService.verificarAccessToken(token);
-
+    const claims = authJwtService.verificarAccessToken(header.slice(7));
+    const usuario = await authJwtService.obtenerUsuarioPorId(claims.sub);
+    if (!usuario?.isActive) return errorResponse(res, 'SESION_INVALIDA', 401);
     req.user = {
-      id: claims.sub,
-      email: claims.email,
-      nombre: claims.nombre,
-      rolGlobal: claims.rolGlobal,
-      mfaVerificado: claims.mfaVerificado,
+      id: usuario.id, email: usuario.email, nombre: usuario.nombre,
+      rolGlobal: usuario.rolGlobal, mfaVerificado: claims.mfaVerificado,
       empresasPermitidas: claims.empresasPermitidas
     };
-
-    // 2. Resolución estricta de empresa_id:
-    // Se toma exclusivamente del token firmado por el servidor.
-    // Se ignora cualquier header x-empresa-id o parámetro externo.
     req.empresaId = claims.empresaId;
-    req.userRolEnEmpresa = claims.rolEnEmpresa || claims.rolGlobal;
-    next();
-  } catch (err: any) {
-    // Fallback retrocompatible con tokens legacy firmados con env.JWT_SECRET
-    try {
-      const decoded = jwt.verify(token, env.JWT_SECRET) as any;
-      req.user = {
-        id: decoded.id || decoded.sub || 'usr-legacy',
-        email: decoded.email || 'legacy@sunaconta.pe',
-        nombre: decoded.nombres || 'Usuario Legacy',
-        rolGlobal: decoded.rolGlobal || 'ADMIN_ESTUDIO'
-      };
-      req.empresaId = decoded.empresaId;
-      req.userRolEnEmpresa = (req.user.rolGlobal as RolEstudio) || 'ADMIN_ESTUDIO';
-      next();
-    } catch {
-      return errorResponse(res, err.message || 'Token de autenticación expirado o inválido', 401);
-    }
+    req.userRolEnEmpresa = undefined;
+    return next();
+  } catch {
+    return errorResponse(res, 'SESION_INVALIDA: Inicie sesión de nuevo.', 401);
   }
 }
 
-/**
- * Middleware para validar que el usuario tenga membresía activa en la empresa indicada
- * y verificar los roles permitidos (RBAC). Resuelve empresaId exclusivamente desde el token.
- */
-export function requireEmpresaMembership(
-  rolesPermitidos: Array<RolEstudio | string> = ['ADMIN_ESTUDIO', 'CONTADOR_SENIOR', 'ASISTENTE_CONTABLE', 'AUDITOR_REVISOR', 'CONTADOR', 'ASISTENTE', 'AUDITOR']
-) {
-  return async (req: Request, res: Response, next: NextFunction) => {
-    const userId = req.user?.id;
-    if (!userId) {
-      return errorResponse(res, 'Acceso denegado: Autenticación requerida', 401);
-    }
-
-    const empresaId = req.empresaId;
-    if (!empresaId) {
-      return errorResponse(res, 'Acceso denegado: Empresa no especificada en el contexto autenticado', 400);
-    }
-
-    // Validación contra el almacén en memoria
-    const membresiaMemoria = USUARIOS_EMPRESA_MEMORIA.find(
-      m => m.usuarioId === userId && m.empresaId === empresaId && m.estado === 'ACTIVO'
-    );
-
-    if (membresiaMemoria) {
-      req.userRolEnEmpresa = membresiaMemoria.rolEnEmpresa;
-    } else if (req.user?.rolGlobal === 'ADMIN_ESTUDIO') {
-      req.userRolEnEmpresa = 'ADMIN_ESTUDIO';
-    } else if (!db.isPostgresConnected()) {
-      if (req.user?.empresasPermitidas && !req.user.empresasPermitidas.includes(empresaId)) {
-        return errorResponse(res, `Acceso denegado: No tiene membresía activa en la empresa '${empresaId}'`, 403);
-      }
-      req.userRolEnEmpresa = (req.user?.rolGlobal as RolEstudio) || 'CONTADOR_SENIOR';
-    }
-
-    // Validación en PostgreSQL si está conectado
-    if (db.isPostgresConnected()) {
-      try {
-        const result = await db.query(`
-          SELECT ue.rol_en_empresa, ue.estado
-          FROM usuario_empresa ue
-          WHERE ue.usuario_id = $1 AND ue.empresa_id = $2 AND ue.estado = 'ACTIVO'
-        `, [userId, empresaId]);
-
-        if (result.rows.length === 0) {
-          if (req.user?.rolGlobal !== 'ADMIN_ESTUDIO') {
-            return errorResponse(res, `Acceso denegado: No tiene membresía activa en la empresa '${empresaId}'`, 403);
-          }
-          req.userRolEnEmpresa = 'ADMIN_ESTUDIO';
-        } else {
-          req.userRolEnEmpresa = result.rows[0].rol_en_empresa;
-        }
-      } catch (error) {
-        console.error('Error validando membresía en PostgreSQL:', error);
-      }
-    }
-
-    // Comprobar rol permitido
-    const rolActual = req.userRolEnEmpresa || req.user?.rolGlobal || 'ADMIN_ESTUDIO';
-    if (rolesPermitidos.length > 0 && !rolesPermitidos.includes(rolActual)) {
-      return errorResponse(res, `Permiso insuficiente: El rol '${rolActual}' no está autorizado para esta acción`, 403);
-    }
-
-    next();
+export function requireRol(roles: Array<RolEstudio | string>) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) return errorResponse(res, 'AUTENTICACION_REQUERIDA', 401);
+    if (!roles.includes(req.user.rolGlobal!)) return errorResponse(res, 'PERMISO_INSUFICIENTE', 403);
+    return next();
   };
 }
 
-/**
- * Middleware para exigir MFA (TOTP) en acciones de alta criticidad para ADMIN_ESTUDIO
- */
+export function requireEmpresaMembership(rolesPermitidos?: Array<RolEstudio | string>) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) return errorResponse(res, 'AUTENTICACION_REQUERIDA', 401);
+    const rutaEmpresa = req.route?.path?.startsWith('/empresas/') || req.baseUrl?.endsWith('/empresas');
+    const empresaId = req.params?.empresaId || (rutaEmpresa ? req.params?.id : undefined) || req.empresaId;
+    if (!empresaId) return errorResponse(res, 'EMPRESA_REQUERIDA', 400);
+    try {
+      const membresias = await authJwtService.obtenerMembresias(req.user.id);
+      const rol = membresias.find(m => m.empresaId === empresaId && m.estado === 'ACTIVO')?.rolEnEmpresa;
+      const esLectura = ['GET', 'HEAD', 'OPTIONS'].includes(req.method);
+      const permitidos = rolesPermitidos ?? (esLectura ? ROLES_LECTURA : ROLES_ESCRITURA);
+      if (!rol || !permitidos.includes(rol)) return errorResponse(res, 'PERMISO_INSUFICIENTE', 403);
+      req.empresaId = String(empresaId);
+      req.userRolEnEmpresa = rol;
+      return next();
+    } catch {
+      return errorResponse(res, 'No se pudo verificar el acceso a la empresa.', 503);
+    }
+  };
+}
+
 export function requireMfa() {
   return async (req: Request, res: Response, next: NextFunction) => {
-    const rol = req.user?.rolGlobal || req.userRolEnEmpresa;
-    if (rol === 'ADMIN_ESTUDIO') {
-      const totpHeader = req.headers['x-totp-code'] as string;
-      const mfaYaVerificado = req.user?.mfaVerificado === true;
-
-      if (!mfaYaVerificado && !totpHeader) {
-        return errorResponse(res, 'MFA_REQUERIDO: Esta acción administrativa exige código de autenticación en dos pasos (TOTP)', 403);
+    if (!req.user) return errorResponse(res, 'AUTENTICACION_REQUERIDA', 401);
+    if (req.user.rolGlobal !== 'ADMINISTRADOR') return errorResponse(res, 'PERMISO_INSUFICIENTE', 403);
+    const codigo = req.headers['x-totp-code'];
+    if (!codigo && req.user.mfaVerificado) return next();
+    try {
+      const usuario = await authJwtService.obtenerUsuarioPorId(req.user.id);
+      if (typeof codigo !== 'string' || !usuario?.mfaSecret || !totpService.validarToken(usuario.mfaSecret, codigo)) {
+        return errorResponse(res, 'MFA_CODIGO_INVALIDO', 403);
       }
-
-      if (totpHeader) {
-        const secretAdmin = 'JBSWY3DPEHPK3PXP';
-        const valido = totpService.validarToken(secretAdmin, totpHeader);
-        if (!valido) {
-          return errorResponse(res, 'MFA_CODIGO_INVALIDO: El código TOTP suministrado es inválido o ha expirado', 403);
-        }
-      }
+      return next();
+    } catch {
+      return errorResponse(res, 'No se pudo verificar el segundo factor.', 503);
     }
-    next();
   };
 }

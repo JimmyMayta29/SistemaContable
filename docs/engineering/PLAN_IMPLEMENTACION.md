@@ -150,11 +150,12 @@ En la fase E, **`npm run verify` debe incluir la prueba de ida y vuelta**, las r
 
 - Diseño B y exclusiones: confirmados por el usuario.
 - Limpieza de nomenclatura: cambio separado de la corrección funcional.
-- A, B, B2, C, D y E: pendientes de implementar y aprobar por sus pruebas. Este documento no habilita ni certifica el respaldo existente.
+- A: implementada y comprobada con 19 suites de regresión, tipos y compilación; instalación limpia reproducible; configuración, identidad, sesión y reinicio sobre PostgreSQL real. El registro inicial de datos y sus exclusiones también se comprueba contra el catálogo real.
+- B, B2, C, D y E: pendientes de implementar y aprobar por sus pruebas. Este documento no habilita ni certifica el respaldo existente; en particular su cifrado, contenido y restauración se sustituyen en B2.
 - La ejecución de B2 está condicionada a cerrar B; no se migran ni reemplazan bases de empresas en esta entrega de diseño.
 
 ### Verificación del cambio de nombres
 
 Se aprobaron la comprobación de tipos, compilación, las 16 suites existentes y la paridad de importes de los reportes. Se revisaron nombres y contenido actuales, archivos ocultos e historial disponible de README, con cero referencias de las marcas retiradas.
 
-Esto no cierra las fases funcionales: un diagnóstico separado reprodujo diez defectos de la auditoría en servicios y HTTP aislados. La batería existente usa memoria y un emulador para parte de sus comprobaciones; no se ejecutó PostgreSQL real ni conexión externa SUNAT. La prueba B2 y `npm run verify` permanecen como condiciones de salida por implementar, sin scripts que simulen su aprobación.
+El diagnóstico inicial reprodujo diez defectos de la auditoría en servicios y HTTP aislados. La fase A incorpora pruebas nuevas de acceso HTTP, sesión y configuración persistentes; la regresión sigue usando memoria y un emulador para parte de sus comprobaciones. Los defectos contables se corrigen en B y no se considera certificada una conexión externa SUNAT. La prueba B2 y `npm run verify` permanecen como condiciones de salida por implementar, sin scripts que simulen su aprobación.

@@ -166,7 +166,7 @@ async function ejecutarPruebas() {
       rechazoReaperturaSinRol = true;
     }
 
-    assert(rechazoReaperturaSinRol, 'Reapertura denegada a roles no autorizados (requiere ADMIN_ESTUDIO)');
+    assert(rechazoReaperturaSinRol, 'Reapertura denegada a roles no autorizados (requiere ADMINISTRADOR)');
   } catch (err: any) {
     assert(false, 'Error en Test 4: Período Cerrado', err.message);
   }

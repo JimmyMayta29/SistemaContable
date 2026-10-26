@@ -1,63 +1,31 @@
 import { Request, Response } from 'express';
-import { setupService, SetupInicialInput } from '../services/setupService';
+import { setupService } from '../services/setupService';
+import { successResponse, errorResponse } from '../utils/response';
 
 export const setupController = {
   async obtenerEstado(req: Request, res: Response) {
     try {
-      const estado = await setupService.obtenerEstadoSetup();
-      return res.json({
-        success: true,
-        ...estado
-      });
-    } catch (err: any) {
-      return res.status(500).json({
-        success: false,
-        error: 'ERROR_ESTADO_SETUP',
-        mensaje: err.message
-      });
+      return successResponse(res, await setupService.obtenerEstadoSetup());
+    } catch {
+      return errorResponse(res, 'No se pudo consultar la configuración del estudio.', 500);
     }
   },
 
   async generarMfa(req: Request, res: Response) {
     try {
-      const email = (req.query.email as string) || 'admin@estudio.pe';
-      const mfa = setupService.generarMfaSecret(email);
-      return res.json({
-        success: true,
-        ...mfa
-      });
-    } catch (err: any) {
-      return res.status(500).json({
-        success: false,
-        error: 'ERROR_GENERACION_MFA',
-        mensaje: err.message
-      });
+      return successResponse(res, setupService.generarMfaSecret((req.query.email as string) || 'admin@estudio.pe'));
+    } catch {
+      return errorResponse(res, 'Ingrese un correo válido para configurar la autenticación.', 400);
     }
   },
 
   async inicializar(req: Request, res: Response) {
     try {
-      const body = req.body as SetupInicialInput;
-      if (!body.nombreEstudio || !body.rucEstudio || !body.adminEmail || !body.adminPassword) {
-        return res.status(400).json({
-          success: false,
-          error: 'DATOS_INCOMPLETOS',
-          mensaje: 'Se requieren nombre del estudio, RUC, correo del administrador y contraseña.'
-        });
-      }
-
-      const resultado = await setupService.inicializarEstudio(body);
-      return res.status(201).json({
-        success: true,
-        ...resultado
-      });
+      const resultado = await setupService.inicializarEstudio(req.body);
+      return successResponse(res, resultado, 'Estudio contable configurado exitosamente.', 201);
     } catch (err: any) {
       const status = err.message.includes('SISTEMA_YA_CONFIGURADO') ? 409 : 400;
-      return res.status(status).json({
-        success: false,
-        error: 'ERROR_INICIALIZACION_ESTUDIO',
-        mensaje: err.message
-      });
+      return errorResponse(res, err.message, status);
     }
   }
 };

@@ -57,9 +57,9 @@ CREATE TABLE IF NOT EXISTS comprobantes_compra (
     origen VARCHAR(20) NOT NULL DEFAULT 'MANUAL' CHECK (origen IN ('MANUAL', 'SIRE', 'XML')),
     asiento_id UUID REFERENCES asientos(id),
     version INTEGER NOT NULL DEFAULT 1,
-    created_by UUID REFERENCES usuarios(id),
+    created_by UUID REFERENCES usuarios_estudio(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_by UUID REFERENCES usuarios(id),
+    updated_by UUID REFERENCES usuarios_estudio(id),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_compra_documento UNIQUE (empresa_id, tipo_comprobante, serie, numero, proveedor_id)
 );
@@ -99,9 +99,9 @@ CREATE TABLE IF NOT EXISTS comprobantes_venta (
     hash_cpe VARCHAR(100),
     asiento_id UUID REFERENCES asientos(id),
     version INTEGER NOT NULL DEFAULT 1,
-    created_by UUID REFERENCES usuarios(id),
+    created_by UUID REFERENCES usuarios_estudio(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_by UUID REFERENCES usuarios(id),
+    updated_by UUID REFERENCES usuarios_estudio(id),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_venta_documento UNIQUE (empresa_id, tipo_comprobante, serie, numero)
 );
@@ -229,34 +229,42 @@ ALTER TABLE aplicaciones_cobranza ENABLE ROW LEVEL SECURITY;
 ALTER TABLE detracciones ENABLE ROW LEVEL SECURITY;
 ALTER TABLE retenciones_percepciones_igv ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS rls_compras ON comprobantes_compra;
 CREATE POLICY rls_compras ON comprobantes_compra
     FOR ALL
     USING (empresa_id = NULLIF(current_setting('app.current_empresa_id', true), '')::UUID);
 
+DROP POLICY IF EXISTS rls_ventas ON comprobantes_venta;
 CREATE POLICY rls_ventas ON comprobantes_venta
     FOR ALL
     USING (empresa_id = NULLIF(current_setting('app.current_empresa_id', true), '')::UUID);
 
+DROP POLICY IF EXISTS rls_cxp ON cuentas_por_pagar;
 CREATE POLICY rls_cxp ON cuentas_por_pagar
     FOR ALL
     USING (empresa_id = NULLIF(current_setting('app.current_empresa_id', true), '')::UUID);
 
+DROP POLICY IF EXISTS rls_cxc ON cuentas_por_cobrar;
 CREATE POLICY rls_cxc ON cuentas_por_cobrar
     FOR ALL
     USING (empresa_id = NULLIF(current_setting('app.current_empresa_id', true), '')::UUID);
 
+DROP POLICY IF EXISTS rls_app_pago ON aplicaciones_pago;
 CREATE POLICY rls_app_pago ON aplicaciones_pago
     FOR ALL
     USING (empresa_id = NULLIF(current_setting('app.current_empresa_id', true), '')::UUID);
 
+DROP POLICY IF EXISTS rls_app_cobranza ON aplicaciones_cobranza;
 CREATE POLICY rls_app_cobranza ON aplicaciones_cobranza
     FOR ALL
     USING (empresa_id = NULLIF(current_setting('app.current_empresa_id', true), '')::UUID);
 
+DROP POLICY IF EXISTS rls_detracciones ON detracciones;
 CREATE POLICY rls_detracciones ON detracciones
     FOR ALL
     USING (empresa_id = NULLIF(current_setting('app.current_empresa_id', true), '')::UUID);
 
+DROP POLICY IF EXISTS rls_ret_per ON retenciones_percepciones_igv;
 CREATE POLICY rls_ret_per ON retenciones_percepciones_igv
     FOR ALL
     USING (empresa_id = NULLIF(current_setting('app.current_empresa_id', true), '')::UUID);

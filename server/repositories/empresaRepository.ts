@@ -1,4 +1,7 @@
 import { db } from '../config/database';
+import { env } from '../config/env';
+import crypto from 'crypto';
+import { USUARIOS_ESTUDIO_MEMORIA, USUARIOS_EMPRESA_MEMORIA } from '../services/authJwtService';
 import { encryptSensitive } from '../utils/crypto';
 
 export interface EmpresaModel {
@@ -49,7 +52,7 @@ export const empresaRepository = {
   async listarPorUsuario(userId: string): Promise<EmpresaModel[]> {
     if (db.isPostgresConnected()) {
       const res = await db.query(`
-        SELECT DISTINCT e.id, e.tenant_id as "tenantId", e.codigo_empresa as "codigoEmpresa",
+        SELECT e.id, e.tenant_id as "tenantId", e.codigo_empresa as "codigoEmpresa",
                e.ruc, e.razon_social as "razonSocial", e.nombre_comercial as "nombreComercial",
                e.regimen_tributario as "regimenTributario", e.domicilio_fiscal as "domicilioFiscal",
                e.departamento, e.provincia, e.distrito, e.contacto_nombre as "contactoNombre",
@@ -57,15 +60,25 @@ export const empresaRepository = {
                e.moneda_principal as "monedaPrincipal", e.is_active as "isActive",
                e.created_at as "createdAt", e.updated_at as "updatedAt"
         FROM empresas e
-        LEFT JOIN membresias m ON m.empresa_id = e.id AND m.usuario_id = $1 AND m.is_active = TRUE
-        WHERE e.is_active = TRUE
+        JOIN usuarios_estudio u ON u.id = $1 AND u.is_active = TRUE
+        WHERE e.is_active = TRUE AND ((u.rol_global = 'ADMINISTRADOR' AND e.tenant_id = (
+          SELECT tenant_id FROM estudio_configuracion WHERE id = TRUE
+        )) OR EXISTS (
+          SELECT 1 FROM usuario_empresa m WHERE m.empresa_id = e.id AND m.usuario_id = u.id AND m.estado = 'ACTIVO'
+        ))
         ORDER BY e.razon_social ASC
       `, [userId]);
 
-      if (res.rows.length > 0) return res.rows;
+      return res.rows;
     }
 
-    return EMPRESAS_STORE.filter(e => e.isActive);
+    if (env.NODE_ENV !== 'test' || env.DATABASE_URL) throw new Error('DATABASE_NO_DISPONIBLE');
+    const usuario = USUARIOS_ESTUDIO_MEMORIA.find(u => u.id === userId && u.isActive);
+    if (!usuario) return [];
+    const permitidas = USUARIOS_EMPRESA_MEMORIA.filter(m => m.usuarioId === userId && m.estado === 'ACTIVO').map(m => m.empresaId);
+    const estudio = usuario.rolGlobal === 'ADMINISTRADOR'
+      ? (await (await import('../services/setupService')).setupService.obtenerEstadoSetup()).estudio : null;
+    return EMPRESAS_STORE.filter(e => e.isActive && (e.tenantId === estudio?.tenantId || permitidas.includes(e.id)));
   },
 
   async obtenerPorId(id: string): Promise<EmpresaModel | null> {
@@ -81,14 +94,15 @@ export const empresaRepository = {
         FROM empresas
         WHERE id = $1
       `, [id]);
-      if (res.rows.length > 0) return res.rows[0];
+      return res.rows[0] || null;
     }
 
+    if (env.NODE_ENV !== 'test' || env.DATABASE_URL) throw new Error('DATABASE_NO_DISPONIBLE');
     return EMPRESAS_STORE.find(e => e.id === id) || null;
   },
 
   async crear(empresaData: Omit<EmpresaModel, 'id' | 'createdAt' | 'updatedAt' | 'isActive'> & { usuarioId: string }): Promise<EmpresaModel> {
-    const id = `emp-${Date.now()}`;
+    const id = crypto.randomUUID();
     const now = new Date().toISOString();
 
     if (db.isPostgresConnected()) {
@@ -128,15 +142,11 @@ export const empresaRepository = {
 
         const nuevaEmpresa = insertRes.rows[0];
 
-        // 2. Asignar Membresía al creador (ADMIN_ESTUDIO)
-        const rolRes = await client.query(`SELECT id FROM roles WHERE codigo = 'ADMIN_ESTUDIO' LIMIT 1`);
-        const rolId = rolRes.rows[0]?.id;
-        if (rolId) {
-          await client.query(`
-            INSERT INTO membresias (usuario_id, empresa_id, rol_id)
-            VALUES ($1, $2, $3)
-          `, [empresaData.usuarioId, nuevaEmpresa.id, rolId]);
-        }
+        // 2. Asignar Membresía al creador (ADMINISTRADOR)
+        await client.query(`
+          INSERT INTO usuario_empresa (id, usuario_id, empresa_id, rol_en_empresa, estado)
+          VALUES ($1, $2, $3, 'ADMINISTRADOR', 'ACTIVO')
+        `, [crypto.randomUUID(), empresaData.usuarioId, nuevaEmpresa.id]);
 
         // 3. Clonar Plan de Cuentas desde plantilla_pcge
         await client.query(`
@@ -177,6 +187,10 @@ export const empresaRepository = {
       }
     }
 
+    if (env.NODE_ENV !== 'test' || env.DATABASE_URL) throw new Error('DATABASE_NO_DISPONIBLE');
+    if (EMPRESAS_STORE.some(e => e.tenantId === empresaData.tenantId && e.ruc === empresaData.ruc)) {
+      throw new Error('EMPRESA_DUPLICADA: El RUC ya existe en este estudio.');
+    }
     const nueva: EmpresaModel = {
       id,
       ...empresaData,
@@ -185,6 +199,10 @@ export const empresaRepository = {
       updatedAt: now
     };
     EMPRESAS_STORE.unshift(nueva);
+    USUARIOS_EMPRESA_MEMORIA.push({
+      id: crypto.randomUUID(), usuarioId: empresaData.usuarioId, empresaId: nueva.id,
+      rolEnEmpresa: 'ADMINISTRADOR', estado: 'ACTIVO', createdAt: now
+    });
     return nueva;
   },
 

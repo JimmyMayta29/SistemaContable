@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { Sesion } from '../../api/authApi';
+import { apiClient } from '../../api/client';
 import { 
   Building2, 
   ShieldCheck, 
@@ -17,7 +19,7 @@ import {
 } from 'lucide-react';
 
 interface AsistenteSetupInicialProps {
-  onSetupCompletado: (data: { usuario: any; token: string }) => void;
+  onSetupCompletado: (sesion: Sesion) => Promise<void>;
 }
 
 export const AsistenteSetupInicial: React.FC<AsistenteSetupInicialProps> = ({
@@ -80,12 +82,13 @@ export const AsistenteSetupInicial: React.FC<AsistenteSetupInicialProps> = ({
   useEffect(() => {
     if (paso === 3 && !mfaSecret && adminEmail) {
       setCargandoMfa(true);
-      fetch(`/api/setup/mfa-secret?email=${encodeURIComponent(adminEmail)}`)
-        .then(res => res.json())
-        .then(data => {
+      apiClient.get(`/setup/mfa-secret?email=${encodeURIComponent(adminEmail)}`)
+        .then((data: any) => {
           if (data.data) {
             setMfaSecret(data.data.secret);
             setOtpauthUrl(data.data.otpauthUrl);
+          } else {
+            throw new Error('No se pudo generar el secreto de autenticación.');
           }
         })
         .catch(err => {
@@ -148,36 +151,22 @@ export const AsistenteSetupInicial: React.FC<AsistenteSetupInicialProps> = ({
     setProcesando(true);
 
     try {
-      const response = await fetch('/api/setup/inicializar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nombreEstudio,
-          rucEstudio,
-          emailContacto,
-          telefonoContacto,
-          direccionFiscal,
-          adminNombre,
-          adminEmail,
-          adminPassword,
-          mfaSecret,
-          mfaCodigoVerificacion: codigoMfa.trim()
-        })
+      const data: any = await apiClient.post('/setup/inicializar', {
+        nombreEstudio,
+        rucEstudio,
+        emailContacto,
+        telefonoContacto,
+        direccionFiscal,
+        adminNombre,
+        adminEmail,
+        adminPassword,
+        mfaSecret,
+        mfaCodigoVerificacion: codigoMfa.trim()
       });
-
-      const data = await response.json();
-      if (!response.ok || !data.success) {
+      if (!data.success || !data.data?.accessToken) {
         throw new Error(data.error || 'Error al completar la inicialización del sistema.');
       }
-
-      if (data.data?.token) {
-        localStorage.setItem('sunaconta_jwt_token', data.data.token);
-      }
-
-      onSetupCompletado({
-        usuario: data.data.usuario,
-        token: data.data.token
-      });
+      await onSetupCompletado(data.data);
     } catch (err: any) {
       setErrorMensaje(err.message || 'Error en la inicialización.');
     } finally {
@@ -345,7 +334,7 @@ export const AsistenteSetupInicial: React.FC<AsistenteSetupInicialProps> = ({
               <div className="border-b border-slate-100 pb-3">
                 <h2 className="text-base font-semibold text-slate-900 flex items-center gap-2">
                   <KeyRound className="w-5 h-5 text-indigo-600" />
-                  Paso 2: Cuenta del Administrador Principal (ADMIN_ESTUDIO)
+                  Paso 2: Cuenta del Administrador Principal (ADMINISTRADOR)
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Defina las credenciales de la cuenta principal con privilegios totales de administración.

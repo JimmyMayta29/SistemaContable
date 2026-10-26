@@ -19,7 +19,8 @@ import {
   Archive
 } from 'lucide-react';
 import { EmpresaCliente } from '../../types';
-import { useEmpresaPeriodo, RolEmpresa } from '../../context/EmpresaPeriodoContext';
+import { useEmpresaPeriodo } from '../../context/EmpresaPeriodoContext';
+import { apiClient } from '../../api/client';
 import { useReportStyle } from '../../context/ReportStyleContext';
 import { useToast } from '../../context/ToastContext';
 import { BackgroundJobsPanel } from './BackgroundJobsPanel';
@@ -47,9 +48,8 @@ export const TitleBar: React.FC<TitleBarProps> = ({
     setPeriodo,
     isPeriodoCerrado,
     usuario,
-    setUsuarioIdDemo,
     rolEnEmpresa,
-    setRolEnEmpresa,
+    cerrarSesion,
     setIsSearchModalOpen,
     trabajosSegundoPlano
   } = useEmpresaPeriodo();
@@ -70,16 +70,8 @@ export const TitleBar: React.FC<TitleBarProps> = ({
     }
     setRestableciendoDemo(true);
     try {
-      const token = localStorage.getItem('sunaconta_jwt_token');
-      const res = await fetch('/api/empresas/demo/restablecer', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        }
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
+      const data: any = await apiClient.post('/empresas/demo/restablecer');
+      if (!data.success) {
         throw new Error(data.error || 'Error restableciendo empresa demo');
       }
       success('Empresa Demo S.A.C. restablecida con balance cuadrado y 100% de operaciones.');
@@ -316,83 +308,12 @@ export const TitleBar: React.FC<TitleBarProps> = ({
                 </span>
               </div>
 
-              {/* Demo Switcher for Multi-Role Testing (Requisito: Un usuario con roles distintos ve menús distintos) */}
-              <div className="space-y-1.5">
-                <span className="text-[10px] font-bold uppercase text-slate-400 block tracking-wider">
-                  Simular Rol en Empresa Activa:
-                </span>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {(['ADMINISTRADOR', 'CONTADOR', 'ASISTENTE', 'AUDITOR'] as RolEmpresa[]).map((r) => (
-                    <button
-                      key={r}
-                      onClick={() => {
-                        setRolEnEmpresa(r);
-                        setIsUserMenuOpen(false);
-                      }}
-                      className={`px-2 py-1.5 rounded-lg text-[11px] font-bold transition cursor-pointer text-left ${
-                        rolEnEmpresa === r
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-slate-50 hover:bg-slate-100 text-slate-700'
-                      }`}
-                    >
-                      {r}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Demo Switcher for User Account */}
-              <div className="space-y-1.5 pt-2 border-t border-slate-100">
-                <span className="text-[10px] font-bold uppercase text-slate-400 block tracking-wider">
-                  Cambiar Usuario Demo:
-                </span>
-                <div className="space-y-1 text-xs">
-                  <button
-                    onClick={() => {
-                      setUsuarioIdDemo('usr-admin-01');
-                      setIsUserMenuOpen(false);
-                    }}
-                    className={`w-full text-left p-1.5 rounded-lg font-medium ${
-                      usuario.id === 'usr-admin-01' ? 'bg-blue-50 text-blue-800 font-bold' : 'hover:bg-slate-50'
-                    }`}
-                  >
-                    CPC. Carlos Mendoza (Admin Estudio)
-                  </button>
-                  <button
-                    onClick={() => {
-                      setUsuarioIdDemo('usr-contador-01');
-                      setIsUserMenuOpen(false);
-                    }}
-                    className={`w-full text-left p-1.5 rounded-lg font-medium ${
-                      usuario.id === 'usr-contador-01' ? 'bg-blue-50 text-blue-800 font-bold' : 'hover:bg-slate-50'
-                    }`}
-                  >
-                    CPC. Ana Morales (Contador Senior)
-                  </button>
-                  <button
-                    onClick={() => {
-                      setUsuarioIdDemo('usr-asistente-01');
-                      setIsUserMenuOpen(false);
-                    }}
-                    className={`w-full text-left p-1.5 rounded-lg font-medium ${
-                      usuario.id === 'usr-asistente-01' ? 'bg-blue-50 text-blue-800 font-bold' : 'hover:bg-slate-50'
-                    }`}
-                  >
-                    Bach. Jorge Valdivia (Asistente)
-                  </button>
-                  <button
-                    onClick={() => {
-                      setUsuarioIdDemo('usr-auditor-01');
-                      setIsUserMenuOpen(false);
-                    }}
-                    className={`w-full text-left p-1.5 rounded-lg font-medium ${
-                      usuario.id === 'usr-auditor-01' ? 'bg-blue-50 text-blue-800 font-bold' : 'hover:bg-slate-50'
-                    }`}
-                  >
-                    Dr. Roberto Sánchez (Auditor)
-                  </button>
-                </div>
-              </div>
+              <button
+                onClick={() => { setIsUserMenuOpen(false); void cerrarSesion(); }}
+                className="w-full text-left text-sm font-semibold text-rose-700 hover:bg-rose-50 rounded-xl p-2"
+              >
+                Cerrar sesión
+              </button>
             </div>
           )}
         </div>

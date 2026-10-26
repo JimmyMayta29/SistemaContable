@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS reportes_generados (
     tamano_bytes INTEGER,
     hash_contenido VARCHAR(64), -- SHA-256
     mensaje_error TEXT,
-    usuario_id UUID REFERENCES usuarios(id),
+    usuario_id UUID REFERENCES usuarios_estudio(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     finished_at TIMESTAMPTZ
 );

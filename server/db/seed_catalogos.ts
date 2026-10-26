@@ -1,6 +1,6 @@
-import { db } from '../config/database';
+import { db, type DatabaseService } from '../config/database';
 
-export async function runCatalogosSeeds() {
+export async function runCatalogosSeeds(client: Pick<DatabaseService, 'query'> = db) {
   if (!db.isPostgresConnected()) return;
 
   console.log('🌱 [Seeds] Insertando Catálogos Oficiales de SUNAT...');
@@ -18,10 +18,10 @@ export async function runCatalogosSeeds() {
   ];
 
   for (const c of comprobantes) {
-    await db.query(`
+    await client.query(`
       INSERT INTO catalogos_sunat (tabla_sunat, codigo, descripcion, vigencia_desde)
       VALUES ('TIPO_COMPROBANTE', $1, $2, '2020-01-01')
-      ON CONFLICT (tabla_sunat, codigo, vigencia_desde) DO UPDATE SET descripcion = EXCLUDED.descripcion;
+      ON CONFLICT (tabla_sunat, codigo, vigencia_desde) DO NOTHING;
     `, [c.cod, c.desc]);
   }
 
@@ -39,12 +39,10 @@ export async function runCatalogosSeeds() {
   ];
 
   for (const d of detracciones) {
-    await db.query(`
+    await client.query(`
       INSERT INTO catalogos_sunat (tabla_sunat, codigo, descripcion, vigencia_desde, datos_extra)
       VALUES ('BIEN_DETRACCION', $1, $2, '2020-01-01', $3)
-      ON CONFLICT (tabla_sunat, codigo, vigencia_desde) DO UPDATE SET 
-        descripcion = EXCLUDED.descripcion,
-        datos_extra = EXCLUDED.datos_extra;
+      ON CONFLICT (tabla_sunat, codigo, vigencia_desde) DO NOTHING;
     `, [d.cod, d.desc, JSON.stringify({ porcentaje: d.pct })]);
   }
 
@@ -61,10 +59,10 @@ export async function runCatalogosSeeds() {
   ];
 
   for (const m of motivosNC) {
-    await db.query(`
+    await client.query(`
       INSERT INTO catalogos_sunat (tabla_sunat, codigo, descripcion, vigencia_desde)
       VALUES ('MOTIVO_NC', $1, $2, '2020-01-01')
-      ON CONFLICT (tabla_sunat, codigo, vigencia_desde) DO UPDATE SET descripcion = EXCLUDED.descripcion;
+      ON CONFLICT (tabla_sunat, codigo, vigencia_desde) DO NOTHING;
     `, [m.cod, m.desc]);
   }
 

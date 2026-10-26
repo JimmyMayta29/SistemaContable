@@ -1,8 +1,7 @@
-import bcrypt from 'bcryptjs';
-import { db } from '../config/database';
+import { db, type DatabaseService } from '../config/database';
 import { PLAN_CONTABLE_PCGE } from '../../src/data/pcgeAccounts';
 
-export async function runSeeds() {
+export async function runSeeds(client: Pick<DatabaseService, 'query'> = db) {
   if (!db.isPostgresConnected()) {
     console.log('ℹ️ [Seeds] PostgreSQL no conectado. Omitiendo seeds directos.');
     return;
@@ -10,33 +9,15 @@ export async function runSeeds() {
 
   console.log('🌱 [Seeds] Ejecutando inserción de semillas iniciales...');
 
-  try {
-    // 1. Tenant Principal
-    const tenantRes = await db.query(`
-      INSERT INTO tenants (nombre, subdominio, estado)
-      VALUES ('Estudio Contable & Tributario Líder S.A.C.', 'estudio-demo', 'ACTIVO')
-      ON CONFLICT (subdominio) DO UPDATE SET nombre = EXCLUDED.nombre
-      RETURNING id
-    `);
-    const tenantId = tenantRes.rows[0]?.id;
-
-    // 2. Roles
-    await db.query(`
+    // Roles y catálogos compartidos; la identidad inicial se crea exclusivamente en setup.
+    await client.query(`
       INSERT INTO roles (codigo, nombre, descripcion) VALUES
-      ('ADMIN_ESTUDIO', 'Administrador del Estudio', 'Control total de empresas, membresías, auditoría y configuración'),
+      ('ADMINISTRADOR', 'Administrador del Estudio', 'Control total de empresas, membresías, auditoría y configuración'),
       ('CONTADOR', 'Contador General', 'Creación y aprobación de vouchers, cierres de periodo y libros'),
       ('ASISTENTE', 'Asistente Contable', 'Ingreso de comprobantes, compras, ventas y conciliación'),
       ('AUDITOR', 'Auditor / Consulta', 'Acceso de solo lectura a libros y reportes')
       ON CONFLICT (codigo) DO NOTHING;
     `);
-
-    // 3. Usuario Administrador por Defecto
-    const passwordHash = await bcrypt.hash('Admin123*', 10);
-    await db.query(`
-      INSERT INTO usuarios (tenant_id, email, password_hash, nombres, apellidos, telefono)
-      VALUES ($1, 'admin@sunaconta.pe', $2, 'Administrador', 'Principal', '987654321')
-      ON CONFLICT (email) DO NOTHING;
-    `, [tenantId, passwordHash]);
 
     // 4. Parámetros Tributarios Oficiales (Cero hardcoding)
     const parametros = [
@@ -50,10 +31,10 @@ export async function runSeeds() {
     ];
 
     for (const p of parametros) {
-      await db.query(`
+      await client.query(`
         INSERT INTO parametros_tributarios (codigo_parametro, descripcion, valor_numerico, vigente_desde, categoria)
         VALUES ($1, $2, $3, $4, $5)
-        ON CONFLICT (codigo_parametro, vigente_desde) DO UPDATE SET valor_numerico = EXCLUDED.valor_numerico;
+        ON CONFLICT (codigo_parametro, vigente_desde) DO NOTHING;
       `, [p.codigo, p.desc, p.valor, p.desde, p.cat]);
     }
 
@@ -73,13 +54,10 @@ export async function runSeeds() {
     ];
 
     for (const c of cronograma) {
-      await db.query(`
+      await client.query(`
         INSERT INTO cronograma_vencimientos (periodo, ultimo_digito_ruc, fecha_vencimiento_pdt621, fecha_vencimiento_sire, fecha_vencimiento_plame)
         VALUES ('2026-09', $1, $2, $3, $4)
-        ON CONFLICT (periodo, ultimo_digito_ruc) DO UPDATE SET 
-          fecha_vencimiento_pdt621 = EXCLUDED.fecha_vencimiento_pdt621,
-          fecha_vencimiento_sire = EXCLUDED.fecha_vencimiento_sire,
-          fecha_vencimiento_plame = EXCLUDED.fecha_vencimiento_plame;
+        ON CONFLICT (periodo, ultimo_digito_ruc) DO NOTHING;
       `, [c.digito, c.pdt, c.sire, c.plame]);
     }
 
@@ -91,15 +69,12 @@ export async function runSeeds() {
         ? (cta.elemento <= 3 ? 'ACTIVO' : cta.elemento === 4 ? 'PASIVO' : 'PATRIMONIO')
         : (cta.elemento === 6 ? 'GASTO' : cta.elemento === 7 ? 'INGRESO' : 'FUNCION');
 
-      await db.query(`
+      await client.query(`
         INSERT INTO plantilla_pcge (codigo, nombre, nivel, tipo_cuenta, permite_movimiento)
         VALUES ($1, $2, $3, $4, $5)
-        ON CONFLICT (codigo) DO UPDATE SET nombre = EXCLUDED.nombre;
+        ON CONFLICT (codigo) DO NOTHING;
       `, [cta.codigo, cta.nombre, nivel, tipoCuenta, permiteMovimiento]);
     }
 
     console.log('✅ [Seeds] Semillas completadas exitosamente.');
-  } catch (error) {
-    console.error('❌ [Seeds] Error insertando semillas:', error);
-  }
 }

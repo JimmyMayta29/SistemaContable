@@ -14,13 +14,13 @@ backupEmpresaRoutes.get(
 
 backupEmpresaRoutes.post(
   '/empresas/:empresaId/backups/generar',
-  requireEmpresaMembership(['ADMIN_ESTUDIO', 'CONTADOR']),
+  requireEmpresaMembership(['ADMINISTRADOR']),
   backupEmpresaController.generar
 );
 
 backupEmpresaRoutes.post(
   '/empresas/:empresaId/backups/auto-check',
-  requireEmpresaMembership(),
+  requireEmpresaMembership(['ADMINISTRADOR']),
   backupEmpresaController.autoCheck
 );
 
@@ -32,12 +32,12 @@ backupEmpresaRoutes.get(
 
 backupEmpresaRoutes.post(
   '/empresas/:empresaId/backups/verificar',
-  requireEmpresaMembership(),
+  requireEmpresaMembership(['ADMINISTRADOR']),
   backupEmpresaController.verificar
 );
 
 backupEmpresaRoutes.post(
   '/empresas/:empresaId/backups/restaurar',
-  requireEmpresaMembership(['ADMIN_ESTUDIO']),
+  requireEmpresaMembership(['ADMINISTRADOR']),
   backupEmpresaController.restaurar
 );

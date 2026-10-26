@@ -44,11 +44,11 @@ CREATE TABLE IF NOT EXISTS asientos (
     asiento_extorno_id UUID REFERENCES asientos(id),
     motivo_anulacion TEXT,
     version INTEGER NOT NULL DEFAULT 1, -- Bloqueo optimista
-    created_by UUID REFERENCES usuarios(id),
+    created_by UUID REFERENCES usuarios_estudio(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_by UUID REFERENCES usuarios(id),
+    updated_by UUID REFERENCES usuarios_estudio(id),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    anulado_by UUID REFERENCES usuarios(id),
+    anulado_by UUID REFERENCES usuarios_estudio(id),
     anulado_at TIMESTAMPTZ,
     CONSTRAINT uq_asiento_empresa_periodo_subdiario_numero UNIQUE (empresa_id, periodo_id, subdiario_id, numero)
 );
@@ -147,26 +147,32 @@ ALTER TABLE reglas_contabilizacion_detalle ENABLE ROW LEVEL SECURITY;
 ALTER TABLE centros_costo ENABLE ROW LEVEL SECURITY;
 ALTER TABLE asientos_recurrentes ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS rls_asientos ON asientos;
 CREATE POLICY rls_asientos ON asientos
     FOR ALL
     USING (empresa_id = NULLIF(current_setting('app.current_empresa_id', true), '')::UUID);
 
+DROP POLICY IF EXISTS rls_asiento_detalle ON asiento_detalle;
 CREATE POLICY rls_asiento_detalle ON asiento_detalle
     FOR ALL
     USING (empresa_id = NULLIF(current_setting('app.current_empresa_id', true), '')::UUID);
 
+DROP POLICY IF EXISTS rls_correlativos ON correlativos;
 CREATE POLICY rls_correlativos ON correlativos
     FOR ALL
     USING (empresa_id = NULLIF(current_setting('app.current_empresa_id', true), '')::UUID);
 
+DROP POLICY IF EXISTS rls_reglas_contabilizacion ON reglas_contabilizacion;
 CREATE POLICY rls_reglas_contabilizacion ON reglas_contabilizacion
     FOR ALL
     USING (empresa_id = NULLIF(current_setting('app.current_empresa_id', true), '')::UUID);
 
+DROP POLICY IF EXISTS rls_centros_costo ON centros_costo;
 CREATE POLICY rls_centros_costo ON centros_costo
     FOR ALL
     USING (empresa_id = NULLIF(current_setting('app.current_empresa_id', true), '')::UUID);
 
+DROP POLICY IF EXISTS rls_asientos_recurrentes ON asientos_recurrentes;
 CREATE POLICY rls_asientos_recurrentes ON asientos_recurrentes
     FOR ALL
     USING (empresa_id = NULLIF(current_setting('app.current_empresa_id', true), '')::UUID);

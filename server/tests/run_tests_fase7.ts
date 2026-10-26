@@ -40,14 +40,14 @@ async function ejecutarSuiteFase7() {
   // --------------------------------------------------------------------------
   console.log('🔹 Test 1: Autenticación JWT Firmada, MFA (TOTP) y Selección de Empresa');
   {
-    // 1.1 Intentar login de ADMIN_ESTUDIO sin TOTP debe fallar
+    // 1.1 Intentar login de ADMINISTRADOR sin TOTP debe fallar
     let falloSinMfa = false;
     try {
       await authJwtService.login('admin@sunaconta.pe', 'Sunaconta2026!');
     } catch (err: any) {
       falloSinMfa = err.message.includes('MFA_REQUERIDO');
     }
-    assert(falloSinMfa, 'Login de ADMIN_ESTUDIO rechaza acceso sin código TOTP obligatorio');
+    assert(falloSinMfa, 'Login de ADMINISTRADOR rechaza acceso sin código TOTP obligatorio');
 
     // 1.2 TOTP inválido debe ser rechazado
     let falloTotpInvalido = false;
@@ -56,7 +56,7 @@ async function ejecutarSuiteFase7() {
     } catch (err: any) {
       falloTotpInvalido = err.message.includes('MFA_CODIGO_INVALIDO');
     }
-    assert(falloTotpInvalido, 'Login de ADMIN_ESTUDIO rechaza código TOTP incorrecto');
+    assert(falloTotpInvalido, 'Login de ADMINISTRADOR rechaza código TOTP incorrecto');
 
     // 1.3 Generar código TOTP RFC 6238 válido
     const codigoValido = totpService.generarToken('JBSWY3DPEHPK3PXP');
@@ -66,7 +66,7 @@ async function ejecutarSuiteFase7() {
     const loginRes = await authJwtService.login('admin@sunaconta.pe', 'Sunaconta2026!', codigoValido);
     assert(Boolean(loginRes.accessToken), 'Access Token JWT generado');
     assert(Boolean(loginRes.refreshToken), 'Refresh Token generado');
-    assert(loginRes.usuario.rolGlobal === 'ADMIN_ESTUDIO', 'Rol verificado como ADMIN_ESTUDIO');
+    assert(loginRes.usuario.rolGlobal === 'ADMINISTRADOR', 'Rol verificado como ADMINISTRADOR');
     assert(loginRes.expiresIn === 900, 'Access Token con expiración de 15 minutos (900 seg)');
 
     // 1.5 Verificar claims del Access Token

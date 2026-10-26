@@ -131,7 +131,7 @@ export const sunatSirePleController = {
     try {
       const jobId = req.params.id;
       const job = sunatJobsService.obtenerJob(jobId);
-      if (!job) return errorResponse(res, 'JOB_NO_ENCONTRADO: El trabajo solicitado no existe.', 404);
+      if (!job || job.empresaId !== req.empresaId) return errorResponse(res, 'JOB_NO_ENCONTRADO: El trabajo solicitado no existe.', 404);
       return successResponse(res, job);
     } catch (err: any) {
       return errorResponse(res, err.message);
@@ -234,7 +234,7 @@ export const sunatSirePleController = {
     try {
       const id = req.params.id;
       const exportacion = pleExportService.obtenerExportacion(id);
-      if (!exportacion) return errorResponse(res, 'EXPORTACION_NO_ENCONTRADA', 404);
+      if (!exportacion || exportacion.empresaId !== req.empresaId) return errorResponse(res, 'EXPORTACION_NO_ENCONTRADA', 404);
       return successResponse(res, exportacion);
     } catch (err: any) {
       return errorResponse(res, err.message);
